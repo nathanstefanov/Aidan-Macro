@@ -3,4 +3,7 @@ node_modules
 .env
 .env.local
 *.log
+.claude/
+*.xls
+*.xlsx
 
