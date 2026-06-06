@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight, Bookmark, Check, ChevronLeft, ChevronRight, Flame,
   Heart, Menu, Moon, Plus, Search, ShoppingBag, Sparkles, Sun,
@@ -77,7 +77,7 @@ const macroPicks: MacroPick[] = [
   { title: "Popeyes Breast + Green Beans", restaurantId: "popeyes", goal: "High Protein", description: "Bone-in chicken breast with green beans.", items: [{ id: "pop-breast-mild" }, { id: "pop-green-beans" }], why: "37g protein in the breast alone. Pairing with green beans keeps the total meal under 450 calories." },
   { title: "3 PC Tenders + Red Beans", restaurantId: "popeyes", goal: "Best Protein / Calorie", description: "3 PC tenders with red beans and rice.", items: [{ id: "pop-tenders-3" }, { id: "pop-red-beans-rice" }], why: "Tenders are the cleanest protein option at Popeyes. Red beans add carbs and fiber without spiking fat." },
   { title: "Classic Roast Beef + Curly Fries", restaurantId: "arbys", goal: "Best Protein / Calorie", description: "Classic roast beef sandwich with a small curly fries.", items: [{ id: "arb-classic-roast-beef" }, { id: "arb-curly-fries" }], why: "Roast beef is leaner than most fast food beef. You get 23g protein in a single sandwich under 400 calories." },
-  { title: "Roast Chicken + Curly Fries", restaurantId: "arbys", goal: "Low Fat", description: "Roast chicken sandwich with a small curly fries.", items: [{ id: "arb-roast-chicken" }, { id: "arb-curly-fries" }], why: "Sliced roast chicken is one of the leanest sandwiches in fast food — 32g protein, only 13g fat." },
+  { title: "Roast Chicken + Curly Fries", restaurantId: "arbys", goal: "Low Calorie", description: "Roast chicken sandwich with a small curly fries.", items: [{ id: "arb-roast-chicken" }, { id: "arb-curly-fries" }], why: "Sliced roast chicken is one of the leanest sandwiches in fast food — 32g protein, only 13g fat." },
   { title: "Original Hot Wings Haul", restaurantId: "wingstop", goal: "High Protein", description: "10 classic Original Hot wings with veggie sticks.", items: [{ id: "ws-classic-original-hot", quantity: 2 }, { id: "ws-veggie-sticks" }], why: "Original Hot has zero carbs and about 72g protein for 10 wings. Veggie sticks add almost nothing calorie-wise." },
   { title: "Lemon Pepper Classic Wings", restaurantId: "wingstop", goal: "Bulking", description: "10 classic Lemon Pepper wings with seasoned fries.", items: [{ id: "ws-classic-lemon-pepper", quantity: 2 }, { id: "ws-seasoned-fries" }], why: "A calorie-dense combo with strong protein. Lemon pepper dry rub adds fat via butter but tastes incredible." },
   { title: "3 Fingers + Crinkle Fries", restaurantId: "raisingcanes", goal: "Best Protein / Calorie", description: "3 chicken fingers with crinkle cut fries and Cane's sauce.", items: [{ id: "rc-chicken-finger", quantity: 3 }, { id: "rc-crinkle-fries" }, { id: "rc-canes-sauce" }], why: "Cane's fingers are some of the cleanest fast food chicken around. 36g protein with a manageable calorie load." },
@@ -87,12 +87,27 @@ const macroPicks: MacroPick[] = [
 function Logo({ id, small = false }: { id: string; small?: boolean }) {
   const restaurant = restaurants.find(r => r.id === id)!;
   const [loaded, setLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
+      setLoaded(true);
+    }
+  }, []);
+
   return (
     <span
       className={cn("brand-logo", small && "brand-logo-small", loaded && "brand-logo-loaded")}
       style={{ background: restaurant.color }}
     >
-      <img src={restaurant.logoUrl} alt={`${restaurant.name} logo`} loading="lazy" onLoad={() => setLoaded(true)} onError={() => setLoaded(false)} />
+      <img
+        ref={imgRef}
+        src={restaurant.logoUrl}
+        alt={`${restaurant.name} logo`}
+        loading="lazy"
+        onLoad={() => setLoaded(true)}
+        onError={() => setLoaded(false)}
+      />
       <b>{restaurant.short}</b>
       <small>{restaurant.logo}</small>
     </span>
