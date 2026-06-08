@@ -8,6 +8,10 @@ MacroMenu should only label a restaurant as `Official baseline` after its seeded
 - Jimmy John's: checked against the official NutritionGuide PDF effective 2024-07-22 for seeded sandwich and add-on rows.
 - Culver's: checked against the official Nutrition & Allergen Guide PDF published in 2026 for seeded rows.
 
+## Partial Corrections
+
+- Wingstop: classic and boneless wing flavor rows corrected on 2026-06-07 against Wingstop's official Nutritional Facts PDF linked from `https://www.wingstop.com/nutrition`. These corrections cover seeded wing rows only; fries, dips, and any future combo rows still need a complete source import pass before Wingstop should be marked as an official baseline.
+
 ## Preview Seeds
 
 These restaurants have representative demo rows but still need a complete import pass before they should be treated as official baselines:
@@ -19,6 +23,19 @@ These restaurants have representative demo rows but still need a complete import
 - McDonald's
 - Starbucks
 - Taco Bell
+- Subway
+- Five Guys
+- Shake Shack
+- Dairy Queen
+- CAVA
+- Portillo's
+- Wendy's
+- Burger King
+- Panera Bread
+- Popeyes
+- Arby's
+- Wingstop
+- Raising Cane's
 
 ## Modeling Notes
 
