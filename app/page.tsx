@@ -615,8 +615,8 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-bg transition-all duration-300">
       {/* Site Header */}
-      <header className="h-[70px] bg-white/[0.88] dark:bg-[#111a17]/90 backdrop-blur-[18px] border-b border-line dark:border-[#2c3a35] sticky top-0 z-20">
-        <div className="w-[min(1180px,calc(100%-44px))] mx-auto h-full flex items-center gap-5 xl:gap-[46px]">
+      <header className="h-[62px] md:h-[70px] bg-white/[0.88] dark:bg-[#111a17]/90 backdrop-blur-[18px] border-b border-line dark:border-[#2c3a35] sticky top-0 z-20">
+        <div className="w-[min(1180px,calc(100%-28px))] md:w-[min(1180px,calc(100%-44px))] mx-auto h-full flex items-center gap-3 xl:gap-[46px]">
           <button
             className="flex items-center gap-2 font-display font-extrabold text-[19px]"
             onClick={() => { setView("calculator"); setMobileNavOpen(false); }}
@@ -684,7 +684,7 @@ export default function Home() {
 
       {/* Mobile Nav Overlay */}
       {mobileNavOpen && (
-        <div className="fixed top-16 left-0 right-0 bottom-0 z-[99] bg-bg dark:bg-[#111a17] border-t border-line dark:border-[#2c3a35] flex flex-col gap-1 p-3 overflow-y-auto xl:hidden">
+        <div className="fixed top-[62px] md:top-[70px] left-0 right-0 bottom-0 z-[99] bg-bg dark:bg-[#111a17] border-t border-line dark:border-[#2c3a35] flex flex-col gap-1 p-3 pb-24 overflow-y-auto xl:hidden">
           {([
             ["calculator", "Calculator"],
             ["recommendations", "Recommendations"],
@@ -729,40 +729,63 @@ export default function Home() {
         </div>
       )}
 
+      {view !== "restaurant" && (
+        <nav className="xl:hidden fixed left-3 right-3 bottom-[calc(10px+env(safe-area-inset-bottom))] z-[19] grid grid-cols-4 gap-1 rounded-2xl border border-line bg-white/95 p-1.5 shadow-[0_12px_32px_rgba(18,43,32,0.18)] backdrop-blur dark:border-[#2c3a35] dark:bg-[#111a17]/95">
+          {([
+            ["calculator", "Calculator", Search],
+            ["recommendations", "Ideas", Sparkles],
+            ["saved", "Saved", Bookmark],
+            ["pro", "Pro", Zap],
+          ] as const).map(([id, label, Icon]) => (
+            <button
+              key={id}
+              onClick={() => { setView(id); setMobileNavOpen(false); }}
+              className={cn(
+                "flex min-h-[48px] flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-extrabold",
+                view === id ? "bg-green text-white" : "text-[#6d7b74] dark:text-[#a7b5ae]"
+              )}
+            >
+              <Icon size={16} />
+              <span>{label}</span>
+            </button>
+          ))}
+        </nav>
+      )}
+
       {view === "calculator" ? (
         <>
           {/* Hero */}
-          <section className="min-h-[552px] bg-[#f1f7ed] dark:bg-[#17271f] relative overflow-hidden">
-            <div className="w-[min(1180px,calc(100%-44px))] mx-auto pt-[78px] relative z-[2]">
+          <section className="min-h-0 md:min-h-[552px] bg-[#f1f7ed] dark:bg-[#17271f] relative overflow-hidden">
+            <div className="w-[min(1180px,calc(100%-28px))] md:w-[min(1180px,calc(100%-44px))] mx-auto pt-8 pb-10 md:pt-[78px] md:pb-0 relative z-[2]">
               <div className="w-max flex items-center gap-[6px] px-[10px] py-[6px] bg-[#e4f3e3] text-green rounded-[20px] text-[11px] font-bold tracking-[0.08em] uppercase">
                 <Sparkles size={14} /> Calculator
               </div>
-              <h1 className="mt-[17px] mb-[11px] font-display font-extrabold text-[clamp(28px,7vw,58px)] leading-[1.06] tracking-[-3.5px]">
+              <h1 className="mt-[17px] mb-[11px] font-display font-extrabold text-[clamp(32px,12vw,58px)] leading-[1.02] md:leading-[1.06] tracking-[-1.2px] md:tracking-[-3.5px]">
                 Calculate fast food<br /><em className="not-italic text-green">macros quickly.</em>
               </h1>
-              <p className="m-0 w-[570px] max-w-full text-[17px] leading-[1.7] text-[#65736d] dark:text-[#9eada6]">
+              <p className="m-0 w-[570px] max-w-full text-[15px] md:text-[17px] leading-[1.55] md:leading-[1.7] text-[#65736d] dark:text-[#9eada6]">
                 Pick a restaurant, build the meal you ate, and see calories, protein, carbs, and fat without digging through nutrition PDFs.
               </p>
 
               {/* Search Card */}
-              <div className="relative w-[665px] max-w-full mt-[27px] p-2 bg-white/60 dark:bg-[#20302a]/60 border border-white/75 dark:border-[#31443b] rounded-[22px] shadow-[0_20px_40px_#5983601f] backdrop-blur-[14px]">
-                <div className="w-full h-[61px] mt-0 pl-4 pr-2 flex gap-3 items-center bg-white dark:bg-[#21302a] border border-[#e0e6de] dark:border-[#2c3a35] rounded-2xl shadow-none">
+              <div className="relative w-[665px] max-w-full mt-[22px] md:mt-[27px] p-2 bg-white/60 dark:bg-[#20302a]/60 border border-white/75 dark:border-[#31443b] rounded-[18px] md:rounded-[22px] shadow-[0_20px_40px_#5983601f] backdrop-blur-[14px]">
+                <div className="w-full min-h-[58px] md:h-[61px] mt-0 pl-3 md:pl-4 pr-2 flex gap-2 md:gap-3 items-center bg-white dark:bg-[#21302a] border border-[#e0e6de] dark:border-[#2c3a35] rounded-[14px] md:rounded-2xl shadow-none">
                   <Search size={21} className="text-green" />
                   <input
                     value={search}
                     onChange={event => setSearch(event.target.value)}
                     onKeyDown={event => { if (event.key === "Enter") openFirstSearchResult(); }}
                     placeholder="Find a supported restaurant"
-                    className="border-0 outline-none flex-1 text-[15px] bg-transparent dark:text-white"
+                    className="min-w-0 border-0 outline-none flex-1 text-[15px] bg-transparent dark:text-white"
                   />
-                  <span className="text-[11px] text-[#a4ada7] px-[6px] py-[3px] border border-[#edf0ed] rounded-[5px]">Enter</span>
-                  <button onClick={openFirstSearchResult} className="h-[45px] px-5 rounded-[11px] bg-green text-white font-bold text-sm">
+                  <span className="hidden sm:inline-flex text-[11px] text-[#a4ada7] px-[6px] py-[3px] border border-[#edf0ed] rounded-[5px]">Enter</span>
+                  <button onClick={openFirstSearchResult} className="h-[42px] md:h-[45px] px-3 sm:px-5 rounded-[11px] bg-green text-white font-bold text-sm">
                     Search
                   </button>
                 </div>
 
                 {search && (
-                  <div className="absolute left-0 right-0 top-[78px] w-auto bg-white dark:bg-[#21302a] border border-line dark:border-[#2c3a35] rounded-2xl p-[9px] shadow-card z-[4]">
+                  <div className="absolute left-0 right-0 top-[74px] md:top-[78px] w-auto max-h-[64vh] overflow-y-auto bg-white dark:bg-[#21302a] border border-line dark:border-[#2c3a35] rounded-2xl p-[9px] shadow-card z-[4]">
                     {shownRestaurants.length > 0 && (
                       <p className="mx-2 mt-[7px] mb-[5px] text-green text-[10px] font-extrabold tracking-[0.12em] uppercase">Restaurants</p>
                     )}
@@ -818,12 +841,12 @@ export default function Home() {
               </div>
 
               {/* Hero Proof */}
-              <div className="flex gap-[34px] mt-[38px]">
-                <div className="flex flex-col border-r border-[#d7dfd3] pr-[34px]">
+              <div className="grid grid-cols-3 gap-3 md:flex md:gap-[34px] mt-7 md:mt-[38px]">
+                <div className="flex flex-col md:border-r border-[#d7dfd3] md:pr-[34px]">
                   <span className="font-display font-extrabold text-[20px] text-green">{menuItems.length}+</span>
                   <small className="mt-[3px] text-[11px] text-[#7b8a82] uppercase tracking-[0.08em]">tracked rows</small>
                 </div>
-                <div className="flex flex-col border-r border-[#d7dfd3] pr-[34px]">
+                <div className="flex flex-col md:border-r border-[#d7dfd3] md:pr-[34px]">
                   <span className="font-display font-extrabold text-[20px] text-green">{restaurants.length}</span>
                   <small className="mt-[3px] text-[11px] text-[#7b8a82] uppercase tracking-[0.08em]">restaurants</small>
                 </div>
@@ -833,19 +856,19 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            <div className="absolute rounded-full blur-[1px] opacity-[0.65] w-[470px] h-[470px] -right-[60px] -top-[80px] bg-[#d6ead2]" />
-            <div className="absolute rounded-full blur-[1px] opacity-[0.65] w-[260px] h-[260px] right-[250px] -bottom-[150px] bg-[#e5f2d7]" />
+            <div className="hidden md:block absolute rounded-full blur-[1px] opacity-[0.65] w-[470px] h-[470px] -right-[60px] -top-[80px] bg-[#d6ead2]" />
+            <div className="hidden md:block absolute rounded-full blur-[1px] opacity-[0.65] w-[260px] h-[260px] right-[250px] -bottom-[150px] bg-[#e5f2d7]" />
           </section>
 
           {/* Popular Restaurants */}
-          <section className="w-[min(1180px,calc(100%-44px))] mx-auto py-16 md:py-[75px]">
-            <div className="flex items-end justify-between">
+          <section className="w-[min(1180px,calc(100%-28px))] md:w-[min(1180px,calc(100%-44px))] mx-auto py-10 md:py-[75px] pb-24 md:pb-[75px]">
+            <div className="flex items-start sm:items-end justify-between gap-3">
               <div>
                 <p className="m-0 text-green font-bold text-[11px] tracking-[0.14em]">CALCULATOR</p>
                 <h2 className="mt-[6px] mb-[5px] font-display font-extrabold text-[clamp(24px,4vw,32px)] tracking-[-1.5px]">Choose a restaurant</h2>
                 <span className="text-muted text-[15px]">Start with where you ate, then build the exact order.</span>
               </div>
-              <button className="flex items-center gap-2 text-green text-[13px] font-bold">View all <ArrowRight size={16} /></button>
+              <button className="hidden sm:flex items-center gap-2 text-green text-[13px] font-bold">View all <ArrowRight size={16} /></button>
             </div>
 
             {/* Collections */}
@@ -946,25 +969,25 @@ export default function Home() {
       ) : (
         <>
           {/* Restaurant Hero */}
-          <section className="pt-[22px] pb-[29px] bg-[#f0f6ed] dark:bg-[#17271f] border-b border-[#e2e9de] dark:border-[#2c3a35]">
-            <div className="w-[min(1180px,calc(100%-44px))] mx-auto">
+          <section className="pt-[18px] md:pt-[22px] pb-[22px] md:pb-[29px] bg-[#f0f6ed] dark:bg-[#17271f] border-b border-[#e2e9de] dark:border-[#2c3a35]">
+            <div className="w-[min(1180px,calc(100%-28px))] md:w-[min(1180px,calc(100%-44px))] mx-auto">
               <button
                 className="flex gap-[5px] items-center text-green text-xs font-bold"
                 onClick={() => setView("calculator")}
               >
                 <ChevronLeft size={16} /> All restaurants
               </button>
-              <div className="flex items-center gap-4 mt-[19px]">
+              <div className="flex flex-wrap items-center gap-3 md:gap-4 mt-[19px]">
                 <Logo id={restaurant.id} />
-                <div>
-                  <div className="flex gap-[7px]">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap gap-[7px]">
                     <span className="flex items-center gap-1 px-[7px] py-[3px] rounded-[10px] bg-white dark:bg-[#21302a] text-[#738078] text-[9px] font-bold uppercase tracking-[0.06em]">{restaurant.category}</span>
                     <span className="flex items-center gap-1 px-[7px] py-[3px] rounded-[10px] bg-white dark:bg-[#21302a] text-[#738078] text-[9px] font-bold uppercase tracking-[0.06em]"><Sparkles size={12} /> {officialBaselineRestaurants.has(restaurant.id) ? "Official baseline" : "Nutrition preview"}</span>
                   </div>
-                  <h1 className="mt-[7px] mb-[3px] font-display font-extrabold text-[33px] tracking-[-1.8px]">{restaurant.name}</h1>
+                  <h1 className="mt-[7px] mb-[3px] font-display font-extrabold text-[28px] md:text-[33px] tracking-[-0.8px] md:tracking-[-1.8px] leading-tight">{restaurant.name}</h1>
                   <p className="m-0 text-muted text-[13px]">{restaurant.description} · Updated nutrition data</p>
                 </div>
-                <button className="flex items-center gap-[7px] ml-auto px-3 py-[10px] border border-[#dce5dc] dark:border-[#2c3a35] rounded-[9px] bg-white dark:bg-[#18231f] text-[#64726c] text-xs font-bold">
+                <button className="hidden sm:flex items-center gap-[7px] ml-auto px-3 py-[10px] border border-[#dce5dc] dark:border-[#2c3a35] rounded-[9px] bg-white dark:bg-[#18231f] text-[#64726c] text-xs font-bold">
                   <Heart size={18} /> Favorite
                 </button>
               </div>
@@ -972,7 +995,7 @@ export default function Home() {
           </section>
 
           {/* Builder Layout */}
-          <section className="w-[min(1180px,calc(100%-44px))] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_330px] gap-7 py-7 pb-24">
+          <section className="w-[min(1180px,calc(100%-28px))] md:w-[min(1180px,calc(100%-44px))] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_330px] gap-5 md:gap-7 py-5 md:py-7 pb-28">
             <div className="catalog">
               <RestaurantBuilder
                 restaurantId={restaurantId}
@@ -1009,7 +1032,7 @@ export default function Home() {
 
           {/* Mobile Meal Button */}
           <button
-            className="lg:hidden fixed z-[12] bottom-[14px] left-[14px] right-[14px] h-[55px] flex items-center gap-[10px] px-[17px] rounded-xl bg-green text-white shadow-[0_8px_22px_#133b2c44]"
+            className="lg:hidden fixed z-[12] bottom-[calc(14px+env(safe-area-inset-bottom))] left-[14px] right-[14px] h-[55px] flex items-center gap-[10px] px-[17px] rounded-xl bg-green text-white shadow-[0_8px_22px_#133b2c44]"
             onClick={() => setDrawer(true)}
           >
             <span className="flex gap-[7px] items-center text-xs"><ShoppingBag size={18} />{selected.length} items</span>
@@ -1024,7 +1047,7 @@ export default function Home() {
               onClick={() => setDrawer(false)}
             >
               <div
-                className="w-full max-h-[88vh] overflow-auto p-[15px] bg-bg dark:bg-[#111a17] rounded-t-[18px]"
+                className="w-full max-h-[88vh] overflow-auto p-[15px] pb-[calc(18px+env(safe-area-inset-bottom))] bg-bg dark:bg-[#111a17] rounded-t-[18px]"
                 onClick={e => e.stopPropagation()}
               >
                 <button aria-label="Close" className="block mb-[5px] ml-auto text-muted" onClick={() => setDrawer(false)}><X /></button>
@@ -1958,7 +1981,7 @@ function RestaurantBuilder({ restaurantId, meal, setMeal, selected, addItem, rem
   if (!meal) return (
     <div>
       {/* Catalog Head */}
-      <div className="flex items-end justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <span className="block mb-[7px] text-green text-[10px] font-bold tracking-[0.14em]">STEP 1 OF 2</span>
           <h2 className="m-0 font-display font-extrabold text-[26px] tracking-[-1px]">What are you building?</h2>
@@ -1972,7 +1995,7 @@ function RestaurantBuilder({ restaurantId, meal, setMeal, selected, addItem, rem
           <button
             key={choice.name}
             onClick={() => chooseMeal(choice)}
-            className="grid grid-cols-[44px_1fr_20px] items-center gap-[10px] p-[18px] text-left bg-card dark:bg-[#18231f] border border-line dark:border-[#2c3a35] rounded-[13px] transition-all duration-200 hover:-translate-y-[3px] hover:border-[#b5d5be] hover:shadow-card"
+            className="grid grid-cols-[40px_1fr_20px] sm:grid-cols-[44px_1fr_20px] items-center gap-[10px] p-4 sm:p-[18px] text-left bg-card dark:bg-[#18231f] border border-line dark:border-[#2c3a35] rounded-[13px] transition-all duration-200 hover:-translate-y-[3px] hover:border-[#b5d5be] hover:shadow-card"
           >
             <span className="grid place-items-center w-10 h-10 text-green bg-[#edf7ee] dark:bg-[#24382f] rounded-[11px]"><Utensils size={21} /></span>
             <div>
@@ -1994,15 +2017,15 @@ function RestaurantBuilder({ restaurantId, meal, setMeal, selected, addItem, rem
   return (
     <div>
       {/* Builder Head */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <span className="block mb-[7px] text-green text-[10px] font-bold tracking-[0.14em]">STEP 2 OF 2</span>
-          <h2 className="m-0 font-display font-extrabold text-[26px] tracking-[-1px]">
+          <h2 className="m-0 font-display font-extrabold text-[24px] sm:text-[26px] tracking-[-0.5px] sm:tracking-[-1px] leading-tight">
             {meal.toLowerCase().includes("build") ? meal : `Build your ${meal.toLowerCase()}`}
           </h2>
           <p className="mt-[6px] mb-0 text-muted text-[13px]">Tap an item, then choose a portion. Customize it the way you really order it.</p>
         </div>
-        <button onClick={() => setMeal(null)} className="flex items-center gap-[3px] text-green text-xs font-bold">
+        <button onClick={() => setMeal(null)} className="flex w-max items-center gap-[3px] text-green text-xs font-bold">
           <ChevronLeft size={15} /> Change meal
         </button>
       </div>
@@ -2018,12 +2041,12 @@ function RestaurantBuilder({ restaurantId, meal, setMeal, selected, addItem, rem
 
       {/* Size Selectors */}
       {restaurantId === "jerseymikes" && (
-        <div className="flex justify-between items-center gap-[14px] mt-[14px] p-[13px] bg-white dark:bg-card border border-line dark:border-[#2c3a35] rounded-[10px]">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-[14px] mt-[14px] p-[13px] bg-white dark:bg-card border border-line dark:border-[#2c3a35] rounded-[10px]">
           <div>
             <b className="block font-display font-bold text-[13px]">Choose sandwich size</b>
             <small className="block mt-[3px] text-muted text-[11px]">Macros scale from the regular-size baseline.</small>
           </div>
-          <div className="grid grid-cols-3 gap-[5px] min-w-[315px]">
+          <div className="grid w-full sm:w-auto grid-cols-3 gap-[5px] sm:min-w-[315px]">
             {jerseyMikesSizes.map(size => (
               <button
                 key={size.label}
@@ -2041,12 +2064,12 @@ function RestaurantBuilder({ restaurantId, meal, setMeal, selected, addItem, rem
         </div>
       )}
       {restaurantId === "potbelly" && (
-        <div className="flex justify-between items-center gap-[14px] mt-[14px] p-[13px] bg-white dark:bg-card border border-line dark:border-[#2c3a35] rounded-[10px]">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-[14px] mt-[14px] p-[13px] bg-white dark:bg-card border border-line dark:border-[#2c3a35] rounded-[10px]">
           <div>
             <b className="block font-display font-bold text-[13px]">Choose sandwich size</b>
             <small className="block mt-[3px] text-muted text-[11px]">Skinny is about one-third less; Bigs is about one-third more than Original.</small>
           </div>
-          <div className="grid grid-cols-3 gap-[5px] min-w-[315px]">
+          <div className="grid w-full sm:w-auto grid-cols-3 gap-[5px] sm:min-w-[315px]">
             {potbellySizes.map(size => (
               <button
                 key={size.label}
@@ -2064,12 +2087,12 @@ function RestaurantBuilder({ restaurantId, meal, setMeal, selected, addItem, rem
         </div>
       )}
       {restaurantId === "subway" && (
-        <div className="flex justify-between items-center gap-[14px] mt-[14px] p-[13px] bg-white dark:bg-card border border-line dark:border-[#2c3a35] rounded-[10px]">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-[14px] mt-[14px] p-[13px] bg-white dark:bg-card border border-line dark:border-[#2c3a35] rounded-[10px]">
           <div>
             <b className="block font-display font-bold text-[13px]">Choose sandwich size</b>
             <small className="block mt-[3px] text-muted text-[11px]">Footlong doubles bread, proteins, cheese, toppings, and sauces from the 6-inch baseline.</small>
           </div>
-          <div className="grid grid-cols-3 gap-[5px] min-w-[315px]">
+          <div className="grid w-full sm:w-auto grid-cols-3 gap-[5px] sm:min-w-[315px]">
             {subwaySizes.map(size => (
               <button
                 key={size.label}
@@ -2087,12 +2110,12 @@ function RestaurantBuilder({ restaurantId, meal, setMeal, selected, addItem, rem
         </div>
       )}
       {restaurantId === "starbucks" && (
-        <div className="flex justify-between items-center gap-[14px] mt-[14px] p-[13px] bg-white dark:bg-card border border-line dark:border-[#2c3a35] rounded-[10px]">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-[14px] mt-[14px] p-[13px] bg-white dark:bg-card border border-line dark:border-[#2c3a35] rounded-[10px]">
           <div>
             <b className="block font-display font-bold text-[13px]">Choose drink size</b>
             <small className="block mt-[3px] text-muted text-[11px]">Applies to coffee, espresso, refreshers, tea, frappes, and customizations.</small>
           </div>
-          <div className="grid grid-cols-3 gap-[5px] min-w-[315px]">
+          <div className="grid w-full sm:w-auto grid-cols-3 gap-[5px] sm:min-w-[315px]">
             {starbucksSizes.map(size => (
               <button
                 key={size.label}
@@ -2136,13 +2159,13 @@ function RestaurantBuilder({ restaurantId, meal, setMeal, selected, addItem, rem
                     <article
                       key={item.id}
                       className={cn(
-                        "grid grid-cols-[minmax(190px,1fr)_255px_210px] gap-3 items-center px-[13px] py-[11px] border-b border-line dark:border-[#2c3a35] transition-all duration-150 last:border-0",
+                        "grid grid-cols-1 md:grid-cols-[minmax(190px,1fr)_255px_210px] gap-3 items-stretch md:items-center px-[13px] py-[13px] md:py-[11px] border-b border-line dark:border-[#2c3a35] transition-all duration-150 last:border-0",
                         quantity && "bg-[#fbfefb] dark:bg-[#20332a]",
                         quantity && group.variant === "kids" && "bg-[#fff7e6] dark:bg-[#332918]"
                       )}
                     >
                       <button
-                        className="flex items-center gap-[9px] text-left"
+                        className="flex min-w-0 items-center gap-[9px] text-left"
                         onClick={() => quantity ? removeItem(item.id) : addItem(item)}
                       >
                         <span className={cn(
@@ -2158,11 +2181,11 @@ function RestaurantBuilder({ restaurantId, meal, setMeal, selected, addItem, rem
                           <small className="block mt-[3px] text-muted text-[10px]">{item.description}</small>
                         </span>
                       </button>
-                      <div className="m-0 p-0 border-0 flex gap-0">
-                        <span className="w-1/4 flex flex-col gap-[2px]"><b className="text-[13px]">{item.calories}</b><small className="text-[#96a19c] text-[8px] uppercase tracking-[0.04em]">cal</small></span>
-                        <span className="w-1/4 flex flex-col gap-[2px]"><b className="text-[13px]">{item.protein}g</b><small className="text-[#96a19c] text-[8px] uppercase tracking-[0.04em]">protein</small></span>
-                        <span className="w-1/4 flex flex-col gap-[2px]"><b className="text-[13px]">{item.carbs}g</b><small className="text-[#96a19c] text-[8px] uppercase tracking-[0.04em]">carbs</small></span>
-                        <span className="w-1/4 flex flex-col gap-[2px]"><b className="text-[13px]">{item.fat}g</b><small className="text-[#96a19c] text-[8px] uppercase tracking-[0.04em]">fat</small></span>
+                      <div className="m-0 grid grid-cols-4 gap-2 rounded-lg bg-[#f7f9f6] p-2 dark:bg-[#22302b] md:flex md:gap-0 md:bg-transparent md:p-0 md:dark:bg-transparent">
+                        <span className="flex w-full md:w-1/4 flex-col gap-[2px]"><b className="text-[13px]">{item.calories}</b><small className="text-[#96a19c] text-[8px] uppercase tracking-[0.04em]">cal</small></span>
+                        <span className="flex w-full md:w-1/4 flex-col gap-[2px]"><b className="text-[13px]">{item.protein}g</b><small className="text-[#96a19c] text-[8px] uppercase tracking-[0.04em]">protein</small></span>
+                        <span className="flex w-full md:w-1/4 flex-col gap-[2px]"><b className="text-[13px]">{item.carbs}g</b><small className="text-[#96a19c] text-[8px] uppercase tracking-[0.04em]">carbs</small></span>
+                        <span className="flex w-full md:w-1/4 flex-col gap-[2px]"><b className="text-[13px]">{item.fat}g</b><small className="text-[#96a19c] text-[8px] uppercase tracking-[0.04em]">fat</small></span>
                       </div>
                       <ItemControls item={item} quantity={quantity} removeItem={removeItem} updateQuantity={updateQuantity} />
                     </article>
@@ -2181,28 +2204,28 @@ function ItemControls({ item, quantity, removeItem, updateQuantity }: {
   item: MenuItem; quantity: number; removeItem: (id: string) => void; updateQuantity: (id: string, quantity: number) => void;
 }) {
   if (item.control === "toggle") return (
-    <div className="grid grid-cols-3 gap-[3px] p-[3px] bg-[#f3f5f2] dark:bg-[#22302b] rounded-[7px]">
+    <div className="grid w-full grid-cols-2 gap-[3px] p-[3px] bg-[#f3f5f2] dark:bg-[#22302b] rounded-[7px]">
       <button
-        className={cn("px-[3px] py-[6px] text-[#89948e] rounded-[5px] text-[9px] text-center", quantity === 0 && "text-green bg-white dark:bg-[#31413b] shadow-[0_1px_4px_#263f3214] font-bold")}
+        className={cn("min-h-9 px-[3px] py-[6px] text-[#89948e] rounded-[5px] text-[11px] md:text-[9px] text-center", quantity === 0 && "text-green bg-white dark:bg-[#31413b] shadow-[0_1px_4px_#263f3214] font-bold")}
         onClick={() => removeItem(item.id)}
       >No</button>
       <button
-        className={cn("px-[3px] py-[6px] text-[#89948e] rounded-[5px] text-[9px] text-center", quantity === 1 && "text-green bg-white dark:bg-[#31413b] shadow-[0_1px_4px_#263f3214] font-bold")}
+        className={cn("min-h-9 px-[3px] py-[6px] text-[#89948e] rounded-[5px] text-[11px] md:text-[9px] text-center", quantity === 1 && "text-green bg-white dark:bg-[#31413b] shadow-[0_1px_4px_#263f3214] font-bold")}
         onClick={() => updateQuantity(item.id, 1)}
       >Apply</button>
     </div>
   );
 
   if (item.control === "size") return (
-    <div className="grid grid-cols-3 gap-[3px] p-[3px] bg-[#f3f5f2] dark:bg-[#22302b] rounded-[7px]" style={{ gridTemplateColumns: `repeat(4, 1fr)` }}>
+    <div className="grid w-full grid-cols-4 gap-[3px] p-[3px] bg-[#f3f5f2] dark:bg-[#22302b] rounded-[7px]">
       <button
-        className={cn("px-[3px] py-[6px] text-[#89948e] rounded-[5px] text-[9px] text-center", quantity === 0 && "text-green bg-white dark:bg-[#31413b] shadow-[0_1px_4px_#263f3214] font-bold")}
+        className={cn("min-h-9 px-[3px] py-[6px] text-[#89948e] rounded-[5px] text-[10px] md:text-[9px] text-center", quantity === 0 && "text-green bg-white dark:bg-[#31413b] shadow-[0_1px_4px_#263f3214] font-bold")}
         onClick={() => removeItem(item.id)}
       >None</button>
       {itemSizeOptions.map(size => (
         <button
           key={size.label}
-          className={cn("px-[3px] py-[6px] text-[#89948e] rounded-[5px] text-[9px] text-center", quantity === size.value && "bg-green text-white")}
+          className={cn("min-h-9 px-[3px] py-[6px] text-[#89948e] rounded-[5px] text-[10px] md:text-[9px] text-center", quantity === size.value && "bg-green text-white")}
           onClick={() => updateQuantity(item.id, size.value)}
         >{size.label}</button>
       ))}
@@ -2210,15 +2233,15 @@ function ItemControls({ item, quantity, removeItem, updateQuantity }: {
   );
 
   if (item.control === "quantity" || quantityCategories.includes(item.category)) return (
-    <div className="grid grid-cols-3 gap-[3px] p-[3px] bg-[#f3f5f2] dark:bg-[#22302b] rounded-[7px]" style={{ gridTemplateColumns: `repeat(4, 1fr)` }}>
+    <div className="grid w-full grid-cols-4 gap-[3px] p-[3px] bg-[#f3f5f2] dark:bg-[#22302b] rounded-[7px]">
       <button
-        className={cn("px-[3px] py-[6px] text-[#89948e] rounded-[5px] text-[9px] text-center", quantity === 0 && "text-green bg-white dark:bg-[#31413b] shadow-[0_1px_4px_#263f3214] font-bold")}
+        className={cn("min-h-9 px-[3px] py-[6px] text-[#89948e] rounded-[5px] text-[10px] md:text-[9px] text-center", quantity === 0 && "text-green bg-white dark:bg-[#31413b] shadow-[0_1px_4px_#263f3214] font-bold")}
         onClick={() => removeItem(item.id)}
       >None</button>
       {[1, 2, 3].map(value => (
         <button
           key={value}
-          className={cn("px-[3px] py-[6px] text-[#89948e] rounded-[5px] text-[9px] text-center", quantity === value && "bg-green text-white")}
+          className={cn("min-h-9 px-[3px] py-[6px] text-[#89948e] rounded-[5px] text-[10px] md:text-[9px] text-center", quantity === value && "bg-green text-white")}
           onClick={() => updateQuantity(item.id, value)}
         >{value === 1 ? "1 item" : `${value} items`}</button>
       ))}
@@ -2226,11 +2249,11 @@ function ItemControls({ item, quantity, removeItem, updateQuantity }: {
   );
 
   return (
-    <div className="grid grid-cols-3 gap-[3px] p-[3px] bg-[#f3f5f2] dark:bg-[#22302b] rounded-[7px]" style={{ gridTemplateColumns: `repeat(4, 1fr)` }}>
+    <div className="grid w-full grid-cols-4 gap-[3px] p-[3px] bg-[#f3f5f2] dark:bg-[#22302b] rounded-[7px]">
       {[0, .5, 1, 2].map(value => (
         <button
           key={value}
-          className={cn("px-[3px] py-[6px] text-[#89948e] rounded-[5px] text-[9px] text-center", quantity === value && "text-green bg-white dark:bg-[#31413b] shadow-[0_1px_4px_#263f3214] font-bold")}
+          className={cn("min-h-9 px-[3px] py-[6px] text-[#89948e] rounded-[5px] text-[10px] md:text-[9px] text-center", quantity === value && "text-green bg-white dark:bg-[#31413b] shadow-[0_1px_4px_#263f3214] font-bold")}
           onClick={() => value === 0 ? removeItem(item.id) : updateQuantity(item.id, value)}
         >{value === 0 ? "None" : value === .5 ? "Light" : value === 1 ? "Regular" : "Double"}</button>
       ))}
