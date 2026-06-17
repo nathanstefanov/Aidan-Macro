@@ -48,3 +48,63 @@ test("jersey mike's macros match the official regular sub calculator rows", asyn
   assert.match(data, /id:"jm-relish"[^}]*calories:6\.165,protein:\.21,carbs:1\.275,fat:\.015/);
   assert.match(data, /jerseymikes: \["Bread", "Meats", "Cheese", "Spreads", "Toppings", "Add Extras"\]/);
 });
+
+test("jersey mike's includes official cold and hot regular sub baselines", async () => {
+  const data = await readFile("lib/data.ts", "utf8");
+  const page = await readFile("app/page.tsx", "utf8");
+  const coldIds = [
+    "jm-cold-729",
+    "jm-cold-1",
+    "jm-cold-2",
+    "jm-cold-3",
+    "jm-cold-4",
+    "jm-cold-6",
+    "jm-cold-7",
+    "jm-cold-8",
+    "jm-cold-9",
+    "jm-cold-10",
+    "jm-cold-22",
+    "jm-cold-23",
+    "jm-cold-24",
+    "jm-cold-25",
+    "jm-cold-219",
+    "jm-cold-268",
+    "jm-cold-273",
+    "jm-cold-402",
+    "jm-cold-574",
+  ];
+  const hotIds = [
+    "jm-hot-731",
+    "jm-hot-12",
+    "jm-hot-14",
+    "jm-hot-16",
+    "jm-hot-573",
+    "jm-hot-569",
+    "jm-hot-571",
+    "jm-hot-11",
+    "jm-hot-13",
+    "jm-hot-15",
+    "jm-hot-19",
+    "jm-hot-158",
+    "jm-hot-309",
+    "jm-hot-692",
+    "jm-hot-693",
+    "jm-hot-694",
+    "jm-hot-695",
+    "jm-hot-696",
+    "jm-hot-697",
+    "jm-hot-698",
+    "jm-hot-699",
+    "jm-hot-700",
+  ];
+
+  for (const id of [...coldIds, ...hotIds]) {
+    assert.match(data, new RegExp(`id:"${id}"`), `${id} should exist in Jersey Mike's baselines`);
+    assert.match(data, new RegExp(`id:"${id}"[^}]*serving:"Regular sub · official calculator baseline"`));
+  }
+
+  assert.match(data, /id:"jm-cold-1"[^}]*name:"#2 Jersey Shore's Favorite"[^}]*category:"Cold Subs"/);
+  assert.match(data, /id:"jm-hot-11"[^}]*name:"#17 Mike's Famous Philly/);
+  assert.doesNotMatch(data, /id:"jm-hot-27"/);
+  assert.match(page, /categories: \["Cold Subs", "Hot Subs", "Sandwiches"\]/);
+});
