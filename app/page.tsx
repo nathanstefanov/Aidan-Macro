@@ -82,6 +82,15 @@ const proPlanCards = [
   { name: "Free", price: "$0", description: "For quick meal macro checks.", features: ["Manual calculator for all restaurants", "2 recommendation runs per day", "2-3 generated meals", "3 saved meals"] },
   { name: "Pro", price: "$4.99/mo", description: "For people who use recommendations often.", features: ["Unlimited recommendation runs", "5 generated meals", "Compare recommendations", "Advanced filters", "Unlimited saved meals"] },
 ];
+const localAuthStorageKey = "macromenu-local-auth-user";
+function createLocalAuthUser(email: string, name: string): AuthUser {
+  return {
+    id: `local:${email.trim().toLowerCase()}`,
+    email: email.trim().toLowerCase(),
+    name: name.trim() || null,
+    isPro: false,
+  };
+}
 const recommendationTargetForMode = (mode: RecommendationMatchMode, goal: GoalMode, customTarget: MacroTarget): MacroTarget => {
   const goalTarget = targetForGoal(goal, customTarget);
   if (mode === "macros" || goal === "custom") return customTarget;
@@ -197,12 +206,24 @@ function WelcomeScreen({ enterGuest, onAuthenticated }: { enterGuest: () => void
         : { error: await response.text() };
 
       if (!response.ok) {
+        if (response.status === 503) {
+          const localUser = createLocalAuthUser(email, isSignup ? name : "");
+          writeStorage(localAuthStorageKey, localUser);
+          onAuthenticated(localUser);
+          return;
+        }
         setError(data?.error ?? "Could not reach MacroMenu auth. Try again.");
         return;
       }
 
       onAuthenticated(data.user);
     } catch {
+      if (email.includes("@") && password.length >= 8) {
+        const localUser = createLocalAuthUser(email, isSignup ? name : "");
+        writeStorage(localAuthStorageKey, localUser);
+        onAuthenticated(localUser);
+        return;
+      }
       setError("Could not reach MacroMenu auth. Try again.");
     } finally {
       setLoading(false);
@@ -261,7 +282,7 @@ function WelcomeScreen({ enterGuest, onAuthenticated }: { enterGuest: () => void
             <p className="m-0 text-sm leading-[1.6] text-muted">
               {mode === "choice"
                 ? "Sign in to keep your MacroMenu setup connected to your account."
-                : "Your session is secured with an HTTP-only cookie."}
+                : "If account servers are offline, local account mode keeps you moving on this device."}
             </p>
           </div>
 
@@ -443,12 +464,24 @@ export default function Home() {
 
   useEffect(() => {
     let cancelled = false;
+    const localUser = readStorage(localAuthStorageKey, null as AuthUser | null);
 
     fetch("/api/auth/me")
       .then(async response => {
         const data = await response.json().catch(() => ({ user: null }));
         if (!cancelled && response.ok && data.user) {
           setAuthUser(data.user);
+          setEntryMode("account");
+          return;
+        }
+        if (!cancelled && response.status === 503 && localUser) {
+          setAuthUser(localUser);
+          setEntryMode("account");
+        }
+      })
+      .catch(() => {
+        if (!cancelled && localUser) {
+          setAuthUser(localUser);
           setEntryMode("account");
         }
       })
@@ -589,6 +622,7 @@ export default function Home() {
   };
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => null);
+    window.localStorage.removeItem(localAuthStorageKey);
     setAuthUser(null);
     setEntryMode("welcome");
     setMobileNavOpen(false);

@@ -37,6 +37,24 @@ test("header uses a compact layout before wide desktop widths", async () => {
   assert.doesNotMatch(page, /md:hidden flex flex-col/);
 });
 
+test("auth outage falls back to a local account session", async () => {
+  const page = await readFile("app/page.tsx", "utf8");
+
+  assert.match(page, /const localAuthStorageKey = "macromenu-local-auth-user"/);
+  assert.match(page, /function createLocalAuthUser/);
+  assert.match(page, /response\.status === 503[\s\S]*?createLocalAuthUser\(email, isSignup \? name : ""\)/);
+  assert.match(page, /writeStorage\(localAuthStorageKey, localUser\)/);
+  assert.match(page, /onAuthenticated\(localUser\)/);
+});
+
+test("local account session can survive refresh and logout", async () => {
+  const page = await readFile("app/page.tsx", "utf8");
+
+  assert.match(page, /readStorage\(localAuthStorageKey, null as AuthUser \| null\)/);
+  assert.match(page, /setAuthUser\(localUser\)/);
+  assert.match(page, /window\.localStorage\.removeItem\(localAuthStorageKey\)/);
+});
+
 test("deleting saved meals is gated as a pro-only action", async () => {
   const page = await readFile("app/page.tsx", "utf8");
 
