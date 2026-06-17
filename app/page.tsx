@@ -1,5 +1,6 @@
 "use client";
 
+import type { FormEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight, Bookmark, Check, ChevronLeft, ChevronRight, Flame,
@@ -25,6 +26,8 @@ import { cn } from "@/lib/utils";
 
 type Selected = { item: MenuItem; quantity: number };
 type View = "calculator" | "restaurant" | "recommendations" | "saved" | "pro";
+type EntryMode = "welcome" | "signup" | "login" | "guest" | "account";
+type AuthUser = { id: string; email: string; name: string | null; isPro: boolean };
 type RecommendationMatchMode = "macros" | "goal" | "both";
 type MacroPickGoal = "High Protein" | "Low Calorie" | "Low Carb" | "Bulking" | "Best Protein / Calorie";
 type MacroPickItem = { id: string; quantity?: number };
@@ -66,7 +69,8 @@ const quantityCategories = [
   "Tea & Matcha", "Frappuccino", "Frozen Custard", "Salads & Soup",
   "Taco Bell Bases", "Proteins", "Add Extras", "Patties", "Chicken", "Shakes",
   "Shake Mix-ins", "Blizzards", "Mains", "Dips", "Dressings", "Curated Bowls",
-  "Hot Dogs", "Beef & Sausage", "Add Ons", "Dessert", "Salads", "Drinks"
+  "Hot Dogs", "Beef & Sausage", "Add Ons", "Dessert", "Salads", "Drinks",
+  "Smoothies", "Supplements", "Customizations", "Pastries"
 ];
 const round = (number: number) => Math.round(number);
 const recommendationMatchModes: { id: RecommendationMatchMode; label: string; description: string }[] = [
@@ -96,6 +100,7 @@ const homeCollections = [
   { label: "Burger joints", description: "Fresh beef, flame-grilled, shaken", ids: ["wendys", "burgerking", "fiveguys", "shakeshack"] },
   { label: "Chicken spots", description: "Tenders, sandwiches & wings", ids: ["chickfila", "popeyes", "raisingcanes", "wingstop"] },
   { label: "Coffee and drinks", description: "Coffee, refreshers & shakes", ids: ["starbucks", "dairyqueen", "portillos", "arbys"] },
+  { label: "Smoothies", description: "Smoothies, wraps & add-ins", ids: ["tropical", "starbucks", "cava", "panera"] },
 ] as const;
 const macroPickGoals: MacroPickGoal[] = ["High Protein", "Low Calorie", "Low Carb", "Bulking", "Best Protein / Calorie"];
 const macroPicks: MacroPick[] = [
@@ -166,7 +171,47 @@ function MacroStats({ macro, multiplier = 1 }: { macro: Macro; multiplier?: numb
   );
 }
 
-function WelcomeScreen({ enterApp }: { enterApp: (mode: "signup" | "login" | "guest") => void }) {
+function WelcomeScreen({ enterGuest, onAuthenticated }: { enterGuest: () => void; onAuthenticated: (user: AuthUser) => void }) {
+  const [mode, setMode] = useState<"choice" | "signup" | "login">("choice");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const isSignup = mode === "signup";
+
+  const submitAuth = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const response = await fetch(`/api/auth/${isSignup ? "signup" : "login"}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data?.error ?? "Something went wrong.");
+        return;
+      }
+
+      onAuthenticated(data.user);
+    } catch {
+      setError("Could not reach the server. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const chooseMode = (nextMode: "signup" | "login") => {
+    setMode(nextMode);
+    setError("");
+    setPassword("");
+  };
+
   return (
     <main className="min-h-screen bg-[#f4f7f1] text-ink">
       <section className="min-h-screen w-[min(1180px,calc(100%-44px))] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 items-center py-10">
@@ -207,58 +252,123 @@ function WelcomeScreen({ enterApp }: { enterApp: (mode: "signup" | "login" | "gu
         <div className="rounded-[20px] border border-line bg-white p-5 shadow-[0_24px_60px_rgba(31,53,42,0.12)]">
           <div className="rounded-[16px] bg-[#f6f9f5] p-5">
             <p className="m-0 text-green text-[10px] font-extrabold uppercase tracking-[0.14em]">Start here</p>
-            <h2 className="mt-2 mb-2 font-display text-[30px] font-extrabold tracking-[-1px]">Choose how to enter</h2>
+            <h2 className="mt-2 mb-2 font-display text-[30px] font-extrabold tracking-[-1px]">
+              {mode === "choice" ? "Choose how to enter" : isSignup ? "Create your account" : "Welcome back"}
+            </h2>
             <p className="m-0 text-sm leading-[1.6] text-muted">
-              Accounts are demo-only for now. Guest mode lets you start calculating right away.
+              {mode === "choice"
+                ? "Sign in to keep your MacroMenu setup connected to your account."
+                : "Your session is secured with an HTTP-only cookie."}
             </p>
           </div>
 
-          <div className="mt-4 grid gap-3">
-            <button
-              onClick={() => enterApp("signup")}
-              className="group flex items-center gap-3 rounded-[14px] border border-green bg-green p-4 text-left text-white transition hover:-translate-y-[2px]"
-            >
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-white/15">
-                <UserRound size={19} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <b className="block font-display text-[18px]">Sign up</b>
-                <small className="block mt-1 text-white/75">Preview a new account experience.</small>
-              </span>
-              <ArrowRight size={18} className="transition group-hover:translate-x-1" />
-            </button>
+          {mode === "choice" ? (
+            <div className="mt-4 grid gap-3">
+              <button
+                onClick={() => chooseMode("signup")}
+                className="group flex items-center gap-3 rounded-[14px] border border-green bg-green p-4 text-left text-white transition hover:-translate-y-[2px]"
+              >
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-white/15">
+                  <UserRound size={19} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <b className="block font-display text-[18px]">Sign up</b>
+                  <small className="block mt-1 text-white/75">Create a MacroMenu account.</small>
+                </span>
+                <ArrowRight size={18} className="transition group-hover:translate-x-1" />
+              </button>
 
-            <button
-              onClick={() => enterApp("login")}
-              className="group flex items-center gap-3 rounded-[14px] border border-line bg-white p-4 text-left transition hover:-translate-y-[2px] hover:border-green"
-            >
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-green-soft text-green">
-                <UserRound size={19} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <b className="block font-display text-[18px]">Log in</b>
-                <small className="block mt-1 text-muted">Preview returning with saved settings.</small>
-              </span>
-              <ArrowRight size={18} className="text-green transition group-hover:translate-x-1" />
-            </button>
+              <button
+                onClick={() => chooseMode("login")}
+                className="group flex items-center gap-3 rounded-[14px] border border-line bg-white p-4 text-left transition hover:-translate-y-[2px] hover:border-green"
+              >
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-green-soft text-green">
+                  <UserRound size={19} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <b className="block font-display text-[18px]">Log in</b>
+                  <small className="block mt-1 text-muted">Return to your account.</small>
+                </span>
+                <ArrowRight size={18} className="text-green transition group-hover:translate-x-1" />
+              </button>
 
-            <button
-              onClick={() => enterApp("guest")}
-              className="group flex items-center gap-3 rounded-[14px] border border-line bg-white p-4 text-left transition hover:-translate-y-[2px] hover:border-green"
-            >
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#f1f4ef] text-[#66736d]">
-                <ShoppingBag size={19} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <b className="block font-display text-[18px]">Continue as guest</b>
-                <small className="block mt-1 text-muted">Start calculating a meal with no setup.</small>
-              </span>
-              <ArrowRight size={18} className="text-green transition group-hover:translate-x-1" />
-            </button>
-          </div>
+              <button
+                onClick={enterGuest}
+                className="group flex items-center gap-3 rounded-[14px] border border-line bg-white p-4 text-left transition hover:-translate-y-[2px] hover:border-green"
+              >
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#f1f4ef] text-[#66736d]">
+                  <ShoppingBag size={19} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <b className="block font-display text-[18px]">Continue as guest</b>
+                  <small className="block mt-1 text-muted">Start calculating a meal with no setup.</small>
+                </span>
+                <ArrowRight size={18} className="text-green transition group-hover:translate-x-1" />
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={submitAuth} className="mt-4 grid gap-3">
+              {isSignup && (
+                <label className="grid gap-2 text-[12px] font-bold text-[#506059]">
+                  Name
+                  <input
+                    value={name}
+                    onChange={event => setName(event.target.value)}
+                    autoComplete="name"
+                    className="h-12 rounded-[12px] border border-line bg-white px-3 text-[14px] font-semibold outline-none focus:border-green"
+                    placeholder="Aidan"
+                  />
+                </label>
+              )}
+              <label className="grid gap-2 text-[12px] font-bold text-[#506059]">
+                Email
+                <input
+                  value={email}
+                  onChange={event => setEmail(event.target.value)}
+                  autoComplete="email"
+                  type="email"
+                  required
+                  className="h-12 rounded-[12px] border border-line bg-white px-3 text-[14px] font-semibold outline-none focus:border-green"
+                  placeholder="you@example.com"
+                />
+              </label>
+              <label className="grid gap-2 text-[12px] font-bold text-[#506059]">
+                Password
+                <input
+                  value={password}
+                  onChange={event => setPassword(event.target.value)}
+                  autoComplete={isSignup ? "new-password" : "current-password"}
+                  type="password"
+                  required
+                  minLength={8}
+                  className="h-12 rounded-[12px] border border-line bg-white px-3 text-[14px] font-semibold outline-none focus:border-green"
+                  placeholder="At least 8 characters"
+                />
+              </label>
+              {error && (
+                <p className="m-0 rounded-[10px] border border-[#f1c8c8] bg-[#fff4f4] px-3 py-2 text-[12px] font-bold text-[#9b2f2f]">
+                  {error}
+                </p>
+              )}
+              <button
+                disabled={loading}
+                className="h-12 rounded-[12px] bg-green text-white text-[14px] font-extrabold disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? "Working..." : isSignup ? "Create account" : "Log in"}
+              </button>
+              <div className="flex items-center justify-between text-[12px] font-bold">
+                <button type="button" onClick={() => setMode("choice")} className="text-muted">
+                  Back
+                </button>
+                <button type="button" onClick={() => chooseMode(isSignup ? "login" : "signup")} className="text-green">
+                  {isSignup ? "Already have an account?" : "Need an account?"}
+                </button>
+              </div>
+            </form>
+          )}
 
           <p className="mt-4 mb-0 text-center text-[11px] leading-[1.5] text-muted">
-            You can use Calculator and limited recommendations without an account.
+            Guest mode still works for quick meal checks.
           </p>
         </div>
       </section>
@@ -267,7 +377,9 @@ function WelcomeScreen({ enterApp }: { enterApp: (mode: "signup" | "login" | "gu
 }
 
 export default function Home() {
-  const [entryMode, setEntryMode] = useState<"welcome" | "signup" | "login" | "guest">("welcome");
+  const [entryMode, setEntryMode] = useState<EntryMode>("welcome");
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [view, setView] = useState<View>("calculator");
   const [restaurantId, setRestaurantId] = useState("panda");
   const [selected, setSelected] = useState<Selected[]>([
@@ -327,6 +439,26 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    fetch("/api/auth/me")
+      .then(async response => {
+        const data = await response.json().catch(() => ({ user: null }));
+        if (!cancelled && response.ok && data.user) {
+          setAuthUser(data.user);
+          setEntryMode("account");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setAuthChecked(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!hydrated) return;
     writeStorage("macromenu-profile", profile);
   }, [hydrated, profile]);
@@ -353,8 +485,18 @@ export default function Home() {
   const addItem = (item: MenuItem) => setSelected(current => current.some(row => row.item.id === item.id) ? current : [...current, { item, quantity: 1 }]);
   const removeItem = (id: string) => setSelected(current => current.filter(row => row.item.id !== id));
   const updateQuantity = (id: string, quantity: number) => quantity <= 0 ? removeItem(id) : setSelected(current => current.some(row => row.item.id === id) ? current.map(row => row.item.id === id ? { ...row, quantity } : row) : [...current, { item: menuItems.find(item => item.id === id)!, quantity }]);
+  const requireAccount = () => {
+    setEntryMode("welcome");
+    setMobileNavOpen(false);
+    setDrawer(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
   const saveCurrentMeal = () => {
     if (!selected.length) return;
+    if (!authUser) {
+      requireAccount();
+      return;
+    }
     if (!proDemo.isPro && savedMeals.length >= freeSavedMealLimit) {
       setView("pro");
       return;
@@ -381,7 +523,19 @@ export default function Home() {
     setStarbucksSize("Grande");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+  const deleteSavedMeal = (mealId: string) => {
+    if (!proDemo.isPro) {
+      setView("pro");
+      return;
+    }
+
+    setSavedMeals(current => current.filter(meal => meal.id !== mealId));
+  };
   const generateMealRecommendations = () => {
+    if (!authUser) {
+      requireAccount();
+      return;
+    }
     const normalized = normalizeProDemoState(proDemo);
     if (!canGenerateRecommendations(normalized)) {
       setProDemo(normalized);
@@ -417,22 +571,49 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const enterApp = (mode: "signup" | "login" | "guest") => {
-    setEntryMode(mode);
+  const enterGuest = () => {
+    setEntryMode("guest");
     setView("calculator");
     setMobileNavOpen(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+  const handleAuthenticated = (user: AuthUser) => {
+    setAuthUser(user);
+    setEntryMode("account");
+    setView("calculator");
+    setMobileNavOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const logout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => null);
+    setAuthUser(null);
+    setEntryMode("welcome");
+    setMobileNavOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  if (!authChecked) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-[#f4f7f1] text-ink">
+        <div className="flex items-center gap-3 font-display text-[20px] font-extrabold">
+          <span className="grid h-10 w-10 place-items-center rounded-[12px] bg-green text-white">
+            <Flame size={20} fill="currentColor" />
+          </span>
+          MacroMenu
+        </div>
+      </main>
+    );
+  }
 
   if (entryMode === "welcome") {
-    return <WelcomeScreen enterApp={enterApp} />;
+    return <WelcomeScreen enterGuest={enterGuest} onAuthenticated={handleAuthenticated} />;
   }
 
   return (
     <main className="min-h-screen bg-bg transition-all duration-300">
       {/* Site Header */}
       <header className="h-[70px] bg-white/[0.88] dark:bg-[#111a17]/90 backdrop-blur-[18px] border-b border-line dark:border-[#2c3a35] sticky top-0 z-20">
-        <div className="w-[min(1180px,calc(100%-44px))] mx-auto h-full flex items-center gap-[46px]">
+        <div className="w-[min(1180px,calc(100%-44px))] mx-auto h-full flex items-center gap-5 xl:gap-[46px]">
           <button
             className="flex items-center gap-2 font-display font-extrabold text-[19px]"
             onClick={() => { setView("calculator"); setMobileNavOpen(false); }}
@@ -444,7 +625,7 @@ export default function Home() {
           </button>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex gap-[26px] text-sm text-[#53635b] dark:text-[#9eada6]">
+          <nav className="hidden xl:flex gap-[26px] text-sm text-[#53635b] dark:text-[#9eada6]">
             {([
               ["calculator", "Calculator"],
               ["recommendations", "Recommendations"],
@@ -463,18 +644,32 @@ export default function Home() {
 
           {/* Desktop Actions */}
           <div className="ml-auto flex gap-[10px] items-center">
-            <button className="hidden md:flex h-[38px] border border-line dark:border-[#2c3a35] rounded-[10px] items-center gap-[7px] px-3 font-bold text-[13px] dark:bg-[#18231f]">
-              <UserRound size={16} /> {proDemo.isPro ? "Pro demo" : "Free demo"}
+            <button
+              onClick={authUser ? undefined : requireAccount}
+              className={cn(
+                "hidden xl:flex h-[38px] border border-line dark:border-[#2c3a35] rounded-[10px] items-center gap-[7px] px-3 font-bold text-[13px] whitespace-nowrap dark:bg-[#18231f]",
+                !authUser && "border-green text-green hover:bg-green-soft"
+              )}
+            >
+              <UserRound size={16} /> {authUser ? (authUser.name || authUser.email) : "Sign in / Sign up"}
             </button>
+            {authUser && (
+              <button
+                onClick={logout}
+                className="hidden xl:flex h-[38px] border border-line dark:border-[#2c3a35] rounded-[10px] items-center px-3 font-bold text-[13px] text-[#64726c] whitespace-nowrap dark:bg-[#18231f]"
+              >
+                Log out
+              </button>
+            )}
             <button
               onClick={() => setView("pro")}
-              className="hidden md:flex h-[39px] bg-green text-white px-4 rounded-[10px] font-bold text-[13px] items-center"
+              className="hidden xl:flex h-[39px] bg-green text-white px-4 rounded-[10px] font-bold text-[13px] items-center whitespace-nowrap"
             >
               Unlock more recommendations
             </button>
             {/* Hamburger */}
             <button
-              className="md:hidden flex flex-col justify-center items-center gap-[5px] w-[38px] h-[38px] border border-line dark:border-[#2c3a35] rounded-[10px] bg-white dark:bg-[#18231f] flex-shrink-0 cursor-pointer"
+              className="xl:hidden flex flex-col justify-center items-center gap-[5px] w-[38px] h-[38px] border border-line dark:border-[#2c3a35] rounded-[10px] bg-white dark:bg-[#18231f] flex-shrink-0 cursor-pointer"
               onClick={() => setMobileNavOpen(!mobileNavOpen)}
               aria-label="Toggle mobile navigation"
             >
@@ -486,7 +681,7 @@ export default function Home() {
 
       {/* Mobile Nav Overlay */}
       {mobileNavOpen && (
-        <div className="fixed top-16 left-0 right-0 bottom-0 z-[99] bg-bg dark:bg-[#111a17] border-t border-line dark:border-[#2c3a35] flex flex-col gap-1 p-3 overflow-y-auto md:hidden">
+        <div className="fixed top-16 left-0 right-0 bottom-0 z-[99] bg-bg dark:bg-[#111a17] border-t border-line dark:border-[#2c3a35] flex flex-col gap-1 p-3 overflow-y-auto xl:hidden">
           {([
             ["calculator", "Calculator"],
             ["recommendations", "Recommendations"],
@@ -505,9 +700,23 @@ export default function Home() {
             </button>
           ))}
           <div className="my-2 border-t border-line dark:border-[#2c3a35]" />
-          <button className="w-full h-12 border border-line dark:border-[#2c3a35] rounded-[10px] flex items-center justify-center gap-[7px] font-bold text-[13px] dark:bg-[#18231f]">
-            <UserRound size={16} /> {proDemo.isPro ? "Pro demo" : "Free demo"}
+          <button
+            onClick={authUser ? undefined : requireAccount}
+            className={cn(
+              "w-full h-12 border border-line dark:border-[#2c3a35] rounded-[10px] flex items-center justify-center gap-[7px] font-bold text-[13px] dark:bg-[#18231f]",
+              !authUser && "border-green text-green bg-green-soft"
+            )}
+          >
+            <UserRound size={16} /> {authUser ? (authUser.name || authUser.email) : "Sign in / Sign up"}
           </button>
+          {authUser && (
+            <button
+              onClick={logout}
+              className="w-full h-12 border border-line dark:border-[#2c3a35] rounded-[10px] flex items-center justify-center font-bold text-[13px] dark:bg-[#18231f]"
+            >
+              Log out
+            </button>
+          )}
           <button
             onClick={() => { setView("pro"); setMobileNavOpen(false); }}
             className="w-full h-12 bg-green text-white rounded-[10px] font-bold text-[13px] flex items-center justify-center"
@@ -685,29 +894,50 @@ export default function Home() {
           </section>
         </>
       ) : view === "recommendations" ? (
-        <RecommendationsView
-          profile={profile}
-          setProfile={setProfile}
-          proDemo={normalizeProDemoState(proDemo)}
-          goal={recommendationGoal}
-          setGoal={setRecommendationGoal}
-          matchMode={recommendationMatchMode}
-          setMatchMode={setRecommendationMatchMode}
-          target={recommendationTarget}
-          setTarget={setRecommendationTarget}
-          restaurantIds={recommendationRestaurantIds}
-          setRestaurantIds={setRecommendationRestaurantIds}
-          recommendations={recommendations}
-          generateRecommendations={generateMealRecommendations}
-          loadRecommendation={loadRecommendation}
-          openPro={() => setView("pro")}
-        />
+        !authUser ? (
+          <AccountRequiredView
+            title="Sign in for recommendations"
+            description="Create a free account or log in to generate personalized restaurant orders from your macro target."
+            primaryLabel="Sign up or log in"
+            onPrimary={requireAccount}
+            onSecondary={() => setView("calculator")}
+          />
+        ) : (
+          <RecommendationsView
+            profile={profile}
+            setProfile={setProfile}
+            proDemo={normalizeProDemoState(proDemo)}
+            goal={recommendationGoal}
+            setGoal={setRecommendationGoal}
+            matchMode={recommendationMatchMode}
+            setMatchMode={setRecommendationMatchMode}
+            target={recommendationTarget}
+            setTarget={setRecommendationTarget}
+            restaurantIds={recommendationRestaurantIds}
+            setRestaurantIds={setRecommendationRestaurantIds}
+            recommendations={recommendations}
+            generateRecommendations={generateMealRecommendations}
+            loadRecommendation={loadRecommendation}
+            openPro={() => setView("pro")}
+          />
+        )
       ) : view === "saved" ? (
-        <SavedMealsView
-          savedMeals={savedMeals}
-          loadSavedMeal={loadSavedMeal}
-          isPro={proDemo.isPro}
-        />
+        !authUser ? (
+          <AccountRequiredView
+            title="Sign in to save meals"
+            description="Saved meals belong to your account so your go-to orders stay tied to you instead of a guest browser."
+            primaryLabel="Sign up or log in"
+            onPrimary={requireAccount}
+            onSecondary={() => setView("calculator")}
+          />
+        ) : (
+          <SavedMealsView
+            savedMeals={savedMeals}
+            loadSavedMeal={loadSavedMeal}
+            deleteSavedMeal={deleteSavedMeal}
+            isPro={proDemo.isPro}
+          />
+        )
       ) : view === "pro" ? (
         <ProView proDemo={proDemo} setProDemo={setProDemo} />
       ) : (
@@ -769,6 +999,7 @@ export default function Home() {
               saved={saved}
               setSaved={setSaved}
               saveCurrentMeal={saveCurrentMeal}
+              canSave={Boolean(authUser)}
               officialBaseline={officialBaselineRestaurants.has(restaurantId)}
             />
           </section>
@@ -804,6 +1035,7 @@ export default function Home() {
                   saved={saved}
                   setSaved={setSaved}
                   saveCurrentMeal={saveCurrentMeal}
+                  canSave={Boolean(authUser)}
                   officialBaseline={officialBaselineRestaurants.has(restaurantId)}
                   isDrawer
                 />
@@ -949,6 +1181,60 @@ function MacroPicks({ loadMacroPick, openRestaurant }: { loadMacroPick: (pick: M
         </div>
       </section>
     </>
+  );
+}
+
+function AccountRequiredView({
+  title,
+  description,
+  primaryLabel,
+  onPrimary,
+  onSecondary,
+}: {
+  title: string;
+  description: string;
+  primaryLabel: string;
+  onPrimary: () => void;
+  onSecondary: () => void;
+}) {
+  return (
+    <section className="w-[min(1180px,calc(100%-44px))] mx-auto py-10 pb-24">
+      <div className="rounded-[18px] border border-line dark:border-[#2c3a35] bg-white dark:bg-[#18231f] p-8 shadow-card">
+        <div className="grid gap-7 md:grid-cols-[1fr_320px] md:items-center">
+          <div>
+            <span className="inline-flex h-11 w-11 items-center justify-center rounded-[13px] bg-green text-white">
+              <UserRound size={21} />
+            </span>
+            <p className="mt-5 mb-0 text-green font-bold text-[11px] tracking-[0.14em] uppercase">Account required</p>
+            <h1 className="mt-2 mb-3 font-display font-extrabold text-[clamp(30px,5vw,46px)] tracking-[-2px]">
+              {title}
+            </h1>
+            <p className="m-0 max-w-[620px] text-muted">
+              {description}
+            </p>
+          </div>
+          <div className="rounded-[14px] bg-[#f4f8f2] dark:bg-[#22312b] p-4">
+            <div className="grid gap-2">
+              <button
+                onClick={onPrimary}
+                className="h-12 rounded-[10px] bg-green px-4 text-sm font-extrabold text-white"
+              >
+                {primaryLabel}
+              </button>
+              <button
+                onClick={onSecondary}
+                className="h-12 rounded-[10px] border border-line bg-white px-4 text-sm font-extrabold text-green dark:border-[#2c3a35] dark:bg-[#18231f]"
+              >
+                Continue calculating
+              </button>
+            </div>
+            <p className="mt-3 mb-0 text-xs leading-[1.45] text-muted">
+              Calculator stays open for guests. Saving meals and recommendations need an account.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -1262,10 +1548,12 @@ function RecommendationCard({
 function SavedMealsView({
   savedMeals,
   loadSavedMeal,
+  deleteSavedMeal,
   isPro,
 }: {
   savedMeals: SavedMeal[];
   loadSavedMeal: (meal: SavedMeal) => void;
+  deleteSavedMeal: (mealId: string) => void;
   isPro: boolean;
 }) {
   return (
@@ -1298,16 +1586,36 @@ function SavedMealsView({
           {savedMeals.map(meal => {
             const mealRestaurant = restaurants.find(item => item.id === meal.restaurantId)!;
             return (
-              <button
+              <article
                 key={meal.id}
-                onClick={() => loadSavedMeal(meal)}
-                className="rounded-[14px] border border-line dark:border-[#2c3a35] bg-card dark:bg-[#18231f] p-4 text-left shadow-meal transition hover:-translate-y-1"
+                className="relative rounded-[14px] border border-line dark:border-[#2c3a35] bg-card dark:bg-[#18231f] p-4 text-left shadow-meal transition hover:-translate-y-1"
               >
-                <Logo id={meal.restaurantId} small />
-                <h3 className="mt-4 font-display text-lg font-extrabold">{meal.name}</h3>
-                <p className="mt-1 text-xs text-muted">{mealRestaurant.name} · {meal.goalTag ?? "Saved order"}</p>
-                <MacroStats macro={meal.totals} />
-              </button>
+                <button
+                  onClick={() => loadSavedMeal(meal)}
+                  className="block w-full pr-10 text-left"
+                >
+                  <Logo id={meal.restaurantId} small />
+                  <h3 className="mt-4 font-display text-lg font-extrabold">{meal.name}</h3>
+                  <p className="mt-1 text-xs text-muted">{mealRestaurant.name} · {meal.goalTag ?? "Saved order"}</p>
+                  <MacroStats macro={meal.totals} />
+                </button>
+                <button
+                  aria-label={isPro ? `Delete ${meal.name}` : "Unlock Pro to delete saved meal"}
+                  title={isPro ? "Delete saved meal" : "Pro feature"}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    deleteSavedMeal(meal.id);
+                  }}
+                  className={cn(
+                    "absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full border text-[#9aa6a0] transition hover:-translate-y-[1px]",
+                    isPro
+                      ? "border-[#f0d2d2] bg-[#fff7f7] hover:border-[#df9f9f] hover:text-[#a94040] dark:border-[#593536] dark:bg-[#2a1f20]"
+                      : "border-line bg-[#f7f9f6] hover:border-green hover:text-green dark:border-[#2c3a35] dark:bg-[#22302b]"
+                  )}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </article>
             );
           })}
         </div>
@@ -1439,8 +1747,8 @@ function ProView({
 
 const builderConfigs: Record<string, BuilderConfig> = {
   panda: { meals: [{ name: "Bowl", description: "1 side + 1 entree" }, { name: "Plate", description: "1 side + 2 entrees" }, { name: "Bigger Plate", description: "1 side + 3 entrees" }, { name: "A la Carte", description: "Build your own combo" }], groups: [{ label: "Choose your entrees", help: "Chicken, beef, seafood, tofu, and Wok Smart options", categories: ["Entrees"] }, { label: "Choose your sides", help: "Pick rice, noodles, greens, chow fun, or go half and half", categories: ["Sides"] }, { label: "Appetizers and soup", help: "Egg rolls, potstickers, rangoons, spring rolls, and soup", categories: ["Appetizers", "Soup"] }, { label: "Sauces and extras", help: "Track teriyaki, sweet and sour, soy, chili, mustard, drinks, and desserts", categories: ["Sauces", "Drinks", "Desserts"] }], tip: "Use Light, Regular, or Double for every scoop, including half rice and half greens. Panda menu coverage now includes the official entree, side, appetizer, sauce, soup, and dessert sections." },
-  chipotle: { meals: [{ name: "Bowl", description: "The classic build" }, { name: "Burrito", description: "Includes flour tortilla", baseIds: ["chip-tortilla"] }, { name: "Salad", description: "Fresh greens base" }, { name: "Tacos", description: "Includes 3 crispy shells", baseIds: ["chip-taco-shells"] }, { name: "Kid's Meal", description: "Quesadilla or build-your-own" }], groups: [{ label: "Choose your protein", help: "Pick one, mix two, or go double, including limited-time proteins", categories: ["Protein"], showWhen: ["Bowl", "Burrito", "Salad", "Tacos"] }, { label: "Rice", help: "Make it light, regular, or double", categories: ["Rice"], showWhen: ["Bowl", "Burrito", "Salad", "Tacos"] }, { label: "Beans", help: "Add one or both", categories: ["Beans"], showWhen: ["Bowl", "Burrito", "Salad", "Tacos"] }, { label: "Toppings", help: "Finish it exactly how you order it", categories: ["Toppings"], showWhen: ["Bowl", "Burrito", "Salad", "Tacos"] }, { label: "Sides and extras", help: "Add protein cups, chips, or a tortilla on the side", categories: ["Protein Cups", "Sides"], variant: "extras", showWhen: ["Bowl", "Burrito", "Salad", "Tacos"] }, { label: "Kids base", help: "Choose the kid-size taco tortillas, crispy shells, or quesadilla tortilla", categories: ["Kids Base"], variant: "kids", showWhen: ["Kid's Meal"] }, { label: "Kids protein", help: "Kid-sized 2 oz meat or sofritas portions", categories: ["Kids Proteins"], variant: "kids", showWhen: ["Kid's Meal"] }, { label: "Kids rice and beans", help: "Kid-sized rice and bean portions", categories: ["Kids Rice & Beans"], variant: "kids", showWhen: ["Kid's Meal"] }, { label: "Kids toppings", help: "Kid-sized toppings like cheese, salsa, sour cream, guac, and lettuce", categories: ["Kids Toppings"], variant: "kids", showWhen: ["Kid's Meal"] }, { label: "Kids fruit, chips, and drinks", help: "Add the kid side and drink options", categories: ["Kids Fruit & Drinks", "Kids Drinks"], variant: "kids", showWhen: ["Kid's Meal"] }], tip: "Choose double steak, honey chicken, extra rice, protein cups, chips, tortillas, kids meals, and every topping individually." },
-  chickfila: { meals: [{ name: "Entree", description: "Sandwich, nuggets, or grilled protein" }, { name: "Combo", description: "Entree + side + drink" }, { name: "Sides & Treats", description: "Build a snack or lighter meal" }], groups: [{ label: "Choose your entree", help: "Add one or combine items", categories: ["Entrees"] }, { label: "Choose your sides", help: "Fries, fruit, or both", categories: ["Sides"] }, { label: "Sauces", help: "Track every dipping sauce packet", categories: ["Sauces"] }, { label: "Drinks", help: "Finish your combo", categories: ["Drinks"] }], tip: "Sauces count too. Add each packet and adjust the quantity if you use more than one." },
+  chipotle: { meals: [{ name: "Bowl", description: "The classic build" }, { name: "Burrito", description: "Includes flour tortilla", baseIds: ["chip-tortilla"] }, { name: "Salad", description: "Fresh greens base" }, { name: "Tacos", description: "Includes 3 crispy shells", baseIds: ["chip-taco-shells"] }, { name: "Kid's Meal", description: "Quesadilla or build-your-own" }], groups: [{ label: "Choose your protein", help: "Pick one, mix two, or go double, including limited-time proteins", categories: ["Protein"], showWhen: ["Bowl", "Burrito", "Salad", "Tacos"] }, { label: "Rice", help: "Make it light, regular, or double", categories: ["Rice"], showWhen: ["Bowl", "Burrito", "Salad", "Tacos"] }, { label: "Beans", help: "Add one or both", categories: ["Beans"], showWhen: ["Bowl", "Burrito", "Salad", "Tacos"] }, { label: "Toppings", help: "Finish it exactly how you order it", categories: ["Toppings"], showWhen: ["Bowl", "Burrito", "Salad", "Tacos"] }, { label: "Sides, sauces, and extras", help: "Add protein cups, chips, vinaigrette, or a tortilla on the side", categories: ["Protein Cups", "Sides"], showWhen: ["Bowl", "Burrito", "Salad", "Tacos"] }, { label: "Kids base", help: "Choose the kid-size taco tortillas, crispy shells, or quesadilla tortilla", categories: ["Kids Base"], variant: "kids", showWhen: ["Kid's Meal"] }, { label: "Kids protein", help: "Kid-sized 2 oz meat or sofritas portions", categories: ["Kids Proteins"], variant: "kids", showWhen: ["Kid's Meal"] }, { label: "Kids rice and beans", help: "Kid-sized rice and bean portions", categories: ["Kids Rice & Beans"], variant: "kids", showWhen: ["Kid's Meal"] }, { label: "Kids toppings", help: "Kid-sized toppings like cheese, salsa, sour cream, guac, and lettuce", categories: ["Kids Toppings"], variant: "kids", showWhen: ["Kid's Meal"] }, { label: "Kids fruit, chips, and drinks", help: "Add the kid side and drink options", categories: ["Kids Fruit & Drinks", "Kids Drinks"], variant: "kids", showWhen: ["Kid's Meal"] }], tip: "Choose double steak, honey chicken, extra rice, vinaigrette, chips, tortillas, kids meals, and every topping individually." },
+  chickfila: { meals: [{ name: "Breakfast", description: "Biscuits, muffins, bowls, minis" }, { name: "Entree", description: "Sandwich, nuggets, or grilled protein" }, { name: "Combo", description: "Entree + side + drink" }, { name: "Sides & Treats", description: "Build a snack or lighter meal" }], groups: [{ label: "Breakfast", help: "Biscuits, muffins, minis, scramble bowls, and breakfast sides", categories: ["Breakfast"] }, { label: "Choose your entree", help: "Add one or combine items", categories: ["Entrees"] }, { label: "Customize it", help: "Remove or add breakfast and sandwich components when you need a more exact build", categories: ["Remove Ingredients", "Add Extras"] }, { label: "Choose your sides", help: "Fries, fruit, parfait, hash browns, or both", categories: ["Sides"] }, { label: "Sauces", help: "Track every dipping sauce packet", categories: ["Sauces"] }, { label: "Drinks", help: "Finish your combo", categories: ["Drinks"] }], tip: "Breakfast is included now. Add the sandwich or bowl, then customize with removals, sides, sauces, and drinks so the meal matches the real order." },
   potbelly: { meals: [{ name: "Build your own sandwich", description: "Bread, meat, cheese, toppings" }, { name: "Toasty favorite", description: "Start with a known sandwich" }, { name: "Pick-your-pair", description: "Sandwich + side" }], groups: [{ label: "Choose your bread", help: "Start with the bread style you actually ordered", categories: ["Bread"] }, { label: "Choose meats", help: "Add turkey, ham, roast beef, or double portions", categories: ["Meats"] }, { label: "Choose cheese", help: "Swiss, provolone, cheddar, blue cheese, feta, mozzarella, pepperjack, or Cheese Whiz", categories: ["Cheese"] }, { label: "Spreads and toppings", help: "Mayo, mustard, avocado, peppers, lettuce, tomato", categories: ["Spreads", "Toppings"] }, { label: "Customize it", help: "Remove default ingredients or add extras", categories: ["Remove Ingredients", "Add Extras"] }, { label: "Premade favorites and sides", help: "Optional shortcuts or add-ons", categories: ["Sandwiches", "Sides"] }], tip: "Choose Skinny, Original, or Bigs first, then build the sandwich with the cheese, meat, toppings, and removals you actually ordered." },
   jimmyjohns: { meals: [{ name: "Build your own sandwich", description: "Bread, meats, cheese, freebies" }, { name: "Original 8-inch", description: "Classic French bread order" }, { name: "Unwich", description: "Lettuce-wrapped low-carb order" }], groups: [{ label: "Choose your bread", help: "French, sliced wheat, or Unwich lettuce wrap", categories: ["Bread"] }, { label: "Choose meats", help: "Regular, light, or double meat portions", categories: ["Meats"] }, { label: "Choose cheese", help: "Add provolone or skip it", categories: ["Cheese"] }, { label: "Spreads", help: "Mayo, oil and vinegar, and other add-ons", categories: ["Spreads"] }, { label: "Toppings", help: "Freebies like peppers, tomato, and lettuce", categories: ["Toppings"] }, { label: "Customize it", help: "Remove default ingredients or add extras", categories: ["Remove Ingredients", "Add Extras"] }, { label: "Premade favorites", help: "Optional shortcuts if you know the sandwich name", categories: ["Sandwiches"] }], tip: "Jimmy John's component macros use its official add-on guide for 8-inch French, Unwich, sliced wheat, wraps, and customizations." },
   jerseymikes: { meals: [{ name: "Build your own sub", description: "Bread, meats, cheese, Mike's Way" }, { name: "Regular sub", description: "Classic regular-size sub" }, { name: "Sub in a Tub", description: "No-bread bowl order" }], groups: [{ label: "Choose your bread", help: "White, wheat, rosemary parmesan, or no-bread Sub in a Tub", categories: ["Bread"] }, { label: "Choose meats", help: "Add fresh-sliced meats, bacon, and double portions", categories: ["Meats"] }, { label: "Choose cheese", help: "Add provolone or skip it", categories: ["Cheese"] }, { label: "Spreads and Mike's Way", help: "Add mayo, oil, vinegar, lettuce, tomato, onion, or skip anything by not selecting it", categories: ["Spreads", "Toppings"] }, { label: "Premade favorites", help: "Optional shortcuts while the official import is pending", categories: ["Sandwiches"] }], tip: "Jersey Mike's is a true build-your-own flow: nothing is assumed, so users add bread, meat, cheese, spreads, and toppings only when they want them." },
@@ -1454,13 +1762,14 @@ const builderConfigs: Record<string, BuilderConfig> = {
   dairyqueen: { meals: [{ name: "Burgers and chicken", description: "Stackburgers, chicken, fish, hot dogs" }, { name: "Sides", description: "Fries, curds, sauces" }, { name: "Blizzards", description: "Treat size picker" }, { name: "Shakes and drinks", description: "Shakes, smoothies, Julius" }, { name: "Sundaes and desserts", description: "Cones, sundaes, cakes, drinks" }], groups: [{ label: "Burgers", help: "Stackburger rows use official listed item macros", categories: ["Burgers"] }, { label: "Hot dogs", help: "Classic DQ hot dogs and chili cheese dogs", categories: ["Hot Dogs"] }, { label: "Chicken and fish", help: "Chicken strips, sandwiches, fish, and salads", categories: ["Chicken", "Salads"] }, { label: "Customize it", help: "Remove cheese, lettuce, tomato, pickles, onions, or mayo from grill items", categories: ["Remove Ingredients"] }, { label: "Sides", help: "Fries, cheese curds, and snack sides", categories: ["Sides"] }, { label: "Sauces", help: "Dips and sauces", categories: ["Sauces"] }, { label: "Blizzards", help: "Small, medium, and large Blizzard macros", categories: ["Blizzards"] }, { label: "Shakes and drinks", help: "Shake, MooLatte, slush, and drink macros", categories: ["Shakes", "Drinks"] }, { label: "Sundaes and desserts", help: "Sundaes, cones, Dilly Bars, and other treats", categories: ["Desserts"] }], tip: "Dairy Queen is organized by grill food, customization, sides, treats, and drinks so users do not have to dig through one giant menu." },
   cava: { meals: [{ name: "Build your own bowl", description: "Base, main, dips, toppings" }, { name: "Curated bowl", description: "Official CAVA bowl recipes" }, { name: "Pita", description: "Whole pita build" }, { name: "Sides and desserts", description: "Chips, pita, brownie" }], groups: [{ label: "Curated bowls", help: "Use official CAVA recipe macros when you order a named bowl", categories: ["Curated Bowls"] }, { label: "Bases", help: "Rice, lentils, greens, or whole pita", categories: ["Bases"] }, { label: "Mains", help: "Chicken, steak, falafel, lamb, salmon, or roasted vegetables", categories: ["Mains"] }, { label: "Dips and spreads", help: "Hummus, tzatziki, Crazy Feta, harissa, and more", categories: ["Dips"] }, { label: "Toppings", help: "Feta, cucumber, avocado, pita crisps, corn, and more", categories: ["Toppings"] }, { label: "Dressings", help: "Greek vinaigrette, tahini, skhug, and other dressings", categories: ["Dressings"] }, { label: "Sides and desserts", help: "Pita chips, pita, cookies, brownies, and drinks", categories: ["Sides", "Desserts", "Drinks"] }], tip: "CAVA has one of the best official nutrition PDFs for MacroMenu: ingredient-by-ingredient bowl building with calories, protein, carbs, and fat." },
   portillos: { meals: [{ name: "Hot dog", description: "Classic Chicago-style order" }, { name: "Italian beef", description: "Beef, sausage, combo, croissant" }, { name: "Burger", description: "Single or double burgers" }, { name: "Chicken and fish", description: "Sandwiches, fish, tenders" }, { name: "Salads and sides", description: "Fries, salads, sauces" }, { name: "Shakes and dessert", description: "Cake, shakes, drinks" }], groups: [{ label: "Hot dogs", help: "Classic hot dogs and sausage-style items", categories: ["Hot Dogs"] }, { label: "Italian beef and sausage", help: "Italian beef, big beef, Beef N Cheddar Croissant, sausage, bowls, and combos", categories: ["Beef & Sausage"] }, { label: "Burgers", help: "Burger rows use exact single and double macros where available", categories: ["Burgers"] }, { label: "Chicken and fish", help: "Chicken sandwiches, fish, and tenders", categories: ["Chicken & Fish"] }, { label: "Salads and sides", help: "Fries, onion rings, salads, soup, and sauces", categories: ["Sides", "Salads", "Sauces"] }, { label: "Shakes, desserts, and drinks", help: "Cake, shakes, chocolate cake shake, and fountain drinks", categories: ["Shakes", "Desserts", "Drinks"] }, { label: "Add-ons", help: "Cheese, peppers, gravy, and other tracked extras", categories: ["Add Ons"] }, { label: "Customize it", help: "Remove cheese, peppers, giardiniera, bun, or bread from preset orders", categories: ["Remove Ingredients"] }], tip: "Portillo's is now split into hot dogs, beef/sausage, burgers, chicken/fish, sides, dessert drinks, and preset customization." },
-  wendys: { meals: [{ name: "Burgers", description: "Dave's Single, Double, Triple, Baconator" }, { name: "Chicken", description: "Spicy chicken, classic, grilled, nuggets" }, { name: "Salad", description: "Apple Pecan salad" }, { name: "Combo", description: "Entree + side + Frosty" }], groups: [{ label: "Burgers", help: "Dave's Single, Double, Triple, Baconator, Junior Bacon Cheeseburger", categories: ["Burgers"] }, { label: "Chicken and sandwiches", help: "Spicy chicken, classic chicken, grilled chicken, and nuggets", categories: ["Chicken & Sandwiches"] }, { label: "Customize it", help: "Remove mayo, cheese, lettuce, tomato, pickles, onion, ketchup, or honey mustard", categories: ["Remove Ingredients"] }, { label: "Salads", help: "Apple pecan and other salads", categories: ["Salads"] }, { label: "Sides", help: "Fries, chili, and baked potato — chili uses size buttons", categories: ["Sides"] }, { label: "Desserts", help: "Frosty — chocolate or vanilla, use size buttons", categories: ["Desserts"] }], tip: "Wendy's chili is a sleeper pick, and preset sandwiches now support common removals like no lettuce, tomato, mayo, cheese, or bun-style sauce changes." },
+  wendys: { meals: [{ name: "Breakfast", description: "Croissants, biscuits, muffins, potatoes" }, { name: "Burgers", description: "Dave's Single, Double, Triple, Baconator" }, { name: "Chicken", description: "Spicy chicken, classic, grilled, nuggets" }, { name: "Salad", description: "Apple Pecan salad" }, { name: "Combo", description: "Entree + side + Frosty" }], groups: [{ label: "Breakfast", help: "Breakfast Baconator, croissants, biscuits, English muffins, and potatoes", categories: ["Breakfast"] }, { label: "Burgers", help: "Dave's Single, Double, Triple, Baconator, Junior Bacon Cheeseburger", categories: ["Burgers"] }, { label: "Chicken and sandwiches", help: "Spicy chicken, classic chicken, grilled chicken, and nuggets", categories: ["Chicken & Sandwiches"] }, { label: "Customize it", help: "Remove mayo, cheese, lettuce, tomato, pickles, onion, ketchup, honey mustard, Swiss sauce, or honey butter; add egg or sausage", categories: ["Remove Ingredients", "Add Extras"] }, { label: "Salads", help: "Apple pecan and other salads", categories: ["Salads"] }, { label: "Sides", help: "Fries, chili, baked potato, and breakfast potatoes", categories: ["Sides"] }, { label: "Desserts", help: "Frosty — chocolate or vanilla, use size buttons", categories: ["Desserts"] }], tip: "Wendy's now supports breakfast and more customization rows. Add the entree first, then adjust sauces, cheese, egg, sausage, sides, and dessert." },
   burgerking: { meals: [{ name: "Burgers", description: "Whopper, Double Whopper, Bacon King" }, { name: "Chicken", description: "Royal Crispy, Original Chicken, Nuggets" }, { name: "Breakfast", description: "Croissan'wich and hash browns" }, { name: "Combo", description: "Entree + side" }], groups: [{ label: "Burgers", help: "Whopper, Whopper Jr., Double Whopper, and Bacon King", categories: ["Burgers"] }, { label: "Chicken and sandwiches", help: "Royal Crispy, Spicy Royal Crispy, Original Chicken, Fish, and Nuggets", categories: ["Chicken", "Sandwiches"] }, { label: "Customize it", help: "Remove mayo, cheese, lettuce, tomato, pickles, onions, ketchup, or the bun", categories: ["Remove Ingredients"] }, { label: "Breakfast", help: "Croissan'wich sandwiches and hash browns", categories: ["Breakfast"] }, { label: "Sides", help: "French fries and onion rings — use size buttons", categories: ["Sides"] }], tip: "BK preset sandwiches now support common removals. The Double Whopper at 920 calories is still a true calorie bomb." },
-  panera: { meals: [{ name: "Soup", description: "Broccoli cheddar, tomato, French onion, chicken noodle" }, { name: "Salad", description: "Fuji apple, Caesar, green goddess" }, { name: "Sandwich or flatbread", description: "Chipotle chicken, Turkey Bravo, and more" }, { name: "Soup and sandwich", description: "Classic Panera paired meal" }], groups: [{ label: "Soups", help: "Broccoli cheddar, creamy tomato, French onion, and chicken noodle — bowl size by default", categories: ["Soups"] }, { label: "Salads", help: "Full salads with grilled or crispy chicken", categories: ["Salads"] }, { label: "Sandwiches and flatbreads", help: "Hot and cold sandwiches and BBQ chicken flatbread", categories: ["Sandwiches", "Flatbreads"] }, { label: "Customize it", help: "Remove lettuce, tomato, cheese, mayo/sauce, croutons, or dressing", categories: ["Remove Ingredients"] }, { label: "Bakery", help: "Bagels, cookies, and pastries", categories: ["Bakery"] }], tip: "Panera soups use bowl macros by default. Salads and sandwiches now include common removal controls for croutons, dressing, sauces, cheese, lettuce, and tomato." },
+  panera: { meals: [{ name: "Soup", description: "Broccoli cheddar, tomato, French onion, chicken noodle" }, { name: "Salad", description: "Fuji apple, Caesar, Cobb, greens and grains" }, { name: "Sandwich or flatbread", description: "Italiano, BLT, cheesesteak, melts, and more" }, { name: "Bakery and pastries", description: "Bagels, cookies, rolls, scones, and croissants" }, { name: "Soup and sandwich", description: "Classic Panera paired meal" }], groups: [{ label: "Soups", help: "Broccoli cheddar, creamy tomato, French onion, and chicken noodle — bowl size by default", categories: ["Soups"] }, { label: "Salads", help: "Core Panera salads, including Cobb, Southwest, Green Goddess, Caesar, Fuji, and greens with grains", categories: ["Salads"] }, { label: "Sandwiches and flatbreads", help: "Hot and cold sandwiches, BLTs, cheesesteaks, melts, veggie, tuna, and flatbread", categories: ["Sandwiches", "Flatbreads"] }, { label: "Customize it", help: "Remove lettuce, tomato, cheese, sauces, croutons, dressing, bacon, avocado, onion, or bread; add chicken, bacon, avocado, or dressing", categories: ["Remove Ingredients", "Add Extras"] }, { label: "Bakery and pastries", help: "Bagels, cookies, muffins, cinnamon rolls, bear claws, scones, and croissants", categories: ["Bakery", "Pastries"] }], tip: "Panera is now organized around custom orders: pick the sandwich or salad, then adjust removals and add-ons before adding bakery or pastry items." },
   popeyes: { meals: [{ name: "Chicken sandwich", description: "Classic, Spicy, or Blackened Ranch" }, { name: "Bone-in chicken", description: "Breast, thigh, leg, wing — any mix" }, { name: "Tenders", description: "3 or 5 piece hand-battered tenders" }, { name: "Combo", description: "Chicken + sides" }], groups: [{ label: "Chicken sandwiches", help: "Classic, Spicy, and Blackened Ranch brioche bun sandwiches", categories: ["Chicken Sandwiches"] }, { label: "Customize it", help: "Remove pickles, mayo/spicy mayo, ranch mayo, or the brioche bun", categories: ["Remove Ingredients"] }, { label: "Bone-in chicken", help: "Mix any pieces — breast, thigh, wing, and leg tracked individually", categories: ["Chicken"] }, { label: "Tenders", help: "Hand-battered Louisiana chicken tenders", categories: ["Tenders"] }, { label: "Sides", help: "Red beans and rice, mac and cheese, biscuit, coleslaw, corn, green beans, mashed potatoes", categories: ["Sides"] }], tip: "Popeyes sandwiches now support common removals. Bone-in pieces still vary dramatically, so mix intentionally." },
   arbys: { meals: [{ name: "Roast beef", description: "Classic, Beef 'n Cheddar, double, or half pound" }, { name: "Sandwich or chicken", description: "Smokehouse brisket, crispy fish, or chicken" }, { name: "Combo", description: "Sandwich + side" }, { name: "Sides and shakes", description: "Curly fries, mozzarella sticks, shakes" }], groups: [{ label: "Roast beef", help: "Classic, Beef 'n Cheddar, double, and half pound — pick the one you ordered", categories: ["Roast Beef"] }, { label: "Sandwiches and chicken", help: "Smokehouse brisket, crispy fish, crispy or roast chicken", categories: ["Sandwiches", "Chicken"] }, { label: "Customize it", help: "Remove cheese sauce, red ranch, lettuce, tomato, mayo, tartar, honey mustard, or bun", categories: ["Remove Ingredients"] }, { label: "Sides", help: "Curly fries, loaded curly fries, mozzarella sticks, and jalapeno bites", categories: ["Sides"] }, { label: "Shakes", help: "Jamocha and chocolate shakes — use size buttons", categories: ["Shakes"] }], tip: "Arby's preset sandwiches now support common removals. Curly fries remain significantly higher in calories than most fast food fries." },
   wingstop: { meals: [{ name: "Classic wings", description: "Bone-in wings, any flavor" }, { name: "Boneless wings", description: "Boneless pieces, any flavor" }, { name: "Combo", description: "Wings + fries + dips" }, { name: "Sides only", description: "Fries, loaded fries, veggie sticks" }], groups: [{ label: "Classic bone-in wings", help: "Each item is 5 wings. Use quantity to scale — 2 = 10 wings, 3 = 15 wings", categories: ["Classic Wings"] }, { label: "Boneless wings", help: "Each item is 6 boneless pieces. Scale with quantity", categories: ["Boneless Wings"] }, { label: "Sides", help: "Seasoned fries, loaded fries, and veggie sticks", categories: ["Sides"] }, { label: "Dipping sauces", help: "Ranch and bleu cheese — add per dip cup you use", categories: ["Dips"] }], tip: "Classic bone-in wings pack 50g protein per 5. Use quantity to scale — 10 wings is 2x the listed item." },
   raisingcanes: { meals: [{ name: "Combo meal", description: "3 or 4 fingers + fries + toast + sauce" }, { name: "Individual build", description: "Count fingers and sides separately" }, { name: "Sides and drinks", description: "Fries, coleslaw, toast, lemonade, sweet tea" }], groups: [{ label: "Chicken fingers", help: "Use quantity to track 1 through 6 fingers individually", categories: ["Chicken Fingers"] }, { label: "Combo meals", help: "Full combo meals with fries, toast, sauce, and a drink included", categories: ["Combos"] }, { label: "Combo swaps", help: "Track common Cane's substitutions like swapping coleslaw for extra Texas toast", categories: ["Combo Swaps"], showWhen: ["Combo meal"] }, { label: "Sides", help: "Crinkle cut fries, Texas toast, and coleslaw", categories: ["Sides"] }, { label: "Sauces", help: "Cane's sauce — track each 1 oz serving separately", categories: ["Sauces"] }, { label: "Drinks", help: "Lemonade and sweet tea — use size buttons", categories: ["Drinks"] }], tip: "Cane's sauce adds 190 calories and 18g fat per oz. Track every packet — it adds up fast. The Caniac Combo is 1790 calories total." },
+  tropical: { meals: [{ name: "Smoothie", description: "Fruit, green, and indulgent smoothies" }, { name: "Food", description: "Wraps, flatbreads, and bowls" }, { name: "Smoothie + food", description: "Cafe combo with add-ins" }], groups: [{ label: "Smoothies", help: "Choose the smoothie first, then add supplements or adjust sweetener", categories: ["Smoothies"] }, { label: "Food", help: "Wraps, flatbreads, bowls, and cafe meals", categories: ["Food"] }, { label: "Customize it", help: "Add whey, pea protein, collagen, peanut butter, banana, choose half turbinado, no turbinado, half Splenda, full Splenda, or remove sauces", categories: ["Supplements", "Customizations", "Remove Ingredients"] }], tip: "Tropical Smoothie works best as a customizable build: pick the smoothie or food item, then adjust protein, fruit, peanut butter, turbinado, Splenda, and sauce choices to match the order." },
 };
 
 const mealGroupRules: Record<string, Record<string, string[]>> = {
@@ -1471,15 +1780,16 @@ const mealGroupRules: Record<string, Record<string, string[]>> = {
     "A la Carte": ["Choose your entrees", "Choose your sides", "Appetizers and soup", "Sauces and extras"],
   },
   chipotle: {
-    "Bowl": ["Choose your protein", "Rice", "Beans", "Toppings", "Sides and extras"],
-    "Burrito": ["Choose your protein", "Rice", "Beans", "Toppings", "Sides and extras"],
-    "Salad": ["Choose your protein", "Rice", "Beans", "Toppings", "Sides and extras"],
-    "Tacos": ["Choose your protein", "Rice", "Beans", "Toppings", "Sides and extras"],
+    "Bowl": ["Choose your protein", "Rice", "Beans", "Toppings", "Sides, sauces, and extras"],
+    "Burrito": ["Choose your protein", "Rice", "Beans", "Toppings", "Sides, sauces, and extras"],
+    "Salad": ["Choose your protein", "Rice", "Beans", "Toppings", "Sides, sauces, and extras"],
+    "Tacos": ["Choose your protein", "Rice", "Beans", "Toppings", "Sides, sauces, and extras"],
     "Kid's Meal": ["Kids base", "Kids protein", "Kids rice and beans", "Kids toppings", "Kids fruit, chips, and drinks"],
   },
   chickfila: {
-    "Entree": ["Choose your entree", "Sauces"],
-    "Combo": ["Choose your entree", "Choose your sides", "Sauces", "Drinks"],
+    "Breakfast": ["Breakfast", "Customize it", "Choose your sides", "Sauces", "Drinks"],
+    "Entree": ["Choose your entree", "Customize it", "Sauces"],
+    "Combo": ["Choose your entree", "Customize it", "Choose your sides", "Sauces", "Drinks"],
     "Sides & Treats": ["Choose your sides", "Sauces", "Drinks"],
   },
   potbelly: {
@@ -1501,7 +1811,7 @@ const mealGroupRules: Record<string, Record<string, string[]>> = {
     "Combo meal": ["Burgers", "Chicken, fish, and nuggets", "Customize it", "Sides", "Drinks", "Sauces and desserts"],
     "Burgers": ["Burgers", "Customize it", "Sauces and desserts"],
     "Chicken and nuggets": ["Chicken, fish, and nuggets", "Customize it", "Sauces and desserts"],
-    "Breakfast": ["Breakfast", "Drinks", "McCafe"],
+    "Breakfast": ["Breakfast", "Customize it", "Sides", "Drinks", "McCafe"],
     "Drinks and sweets": ["Drinks", "McCafe", "Sauces and desserts"],
   },
   culvers: {
@@ -1566,6 +1876,7 @@ const mealGroupRules: Record<string, Record<string, string[]>> = {
     "Shakes and dessert": ["Shakes, desserts, and drinks"],
   },
   wendys: {
+    "Breakfast": ["Breakfast", "Customize it", "Sides"],
     "Burgers": ["Burgers", "Customize it", "Sides"],
     "Chicken": ["Chicken and sandwiches", "Customize it", "Sides"],
     "Salad": ["Salads"],
@@ -1581,7 +1892,8 @@ const mealGroupRules: Record<string, Record<string, string[]>> = {
     "Soup": ["Soups"],
     "Salad": ["Salads", "Customize it"],
     "Sandwich or flatbread": ["Sandwiches and flatbreads", "Customize it"],
-    "Soup and sandwich": ["Soups", "Sandwiches and flatbreads", "Customize it"],
+    "Bakery and pastries": ["Bakery and pastries"],
+    "Soup and sandwich": ["Soups", "Sandwiches and flatbreads", "Customize it", "Bakery and pastries"],
   },
   popeyes: {
     "Chicken sandwich": ["Chicken sandwiches", "Customize it", "Sides"],
@@ -1605,6 +1917,11 @@ const mealGroupRules: Record<string, Record<string, string[]>> = {
     "Combo meal": ["Combo meals", "Combo swaps", "Sauces"],
     "Individual build": ["Chicken fingers", "Sides", "Sauces", "Drinks"],
     "Sides and drinks": ["Sides", "Drinks"],
+  },
+  tropical: {
+    "Smoothie": ["Smoothies", "Customize it"],
+    "Food": ["Food", "Customize it"],
+    "Smoothie + food": ["Smoothies", "Food", "Customize it"],
   },
 };
 
@@ -1790,9 +2107,9 @@ function RestaurantBuilder({ restaurantId, meal, setMeal, selected, addItem, rem
         </div>
       )}
 
-      <div className={cn(restaurantId === "chipotle" && meal !== "Kid's Meal" && "grid grid-cols-[minmax(0,1fr)_300px] gap-4 items-start")}>
+      <div>
         <div>
-          {visibleGroups.filter(group => group.variant !== "extras").map(group => (
+          {visibleGroups.map(group => (
             <section
               key={group.label}
               className={cn(
@@ -1852,64 +2169,6 @@ function RestaurantBuilder({ restaurantId, meal, setMeal, selected, addItem, rem
             </section>
           ))}
         </div>
-
-        {/* Extras Column (Chipotle) */}
-        {restaurantId === "chipotle" && meal !== "Kid's Meal" && (
-          <aside className="sticky top-[88px]">
-            {visibleGroups.filter(group => group.variant === "extras").map(group => (
-              <section
-                key={group.label}
-                className="mt-[18px] bg-[#fbfefb] dark:bg-[#1c2a24] border border-[#d9e6d8] dark:border-[#2c3a35] rounded-xl overflow-hidden"
-              >
-                <header className="px-[15px] py-[13px] bg-[#edf7ee] dark:bg-[#23352d] border-b border-line dark:border-[#2c3a35]">
-                  <div>
-                    <h3 className="m-0 font-display font-bold text-[15px]">{group.label}</h3>
-                    <p className="mt-[3px] mb-0 text-muted text-[11px]">{group.help}</p>
-                  </div>
-                </header>
-                <div>
-                  {menuItems.filter(item => item.restaurantId === restaurantId && group.categories.includes(item.category)).map(item => {
-                    const quantity = selected.find(row => row.item.id === item.id)?.quantity ?? 0;
-                    return (
-                      <article
-                        key={item.id}
-                        className={cn(
-                          "block px-[13px] py-[11px] border-b border-line dark:border-[#2c3a35] transition-all duration-150 last:border-0",
-                          quantity && "bg-[#fbfefb] dark:bg-[#20332a]"
-                        )}
-                      >
-                        <button
-                          className="flex items-center gap-[9px] text-left w-full"
-                          onClick={() => quantity ? removeItem(item.id) : addItem(item)}
-                        >
-                          <span className={cn(
-                            "grid place-items-center flex-none w-[23px] h-[23px] text-[#99a69f] border border-[#d5dcd7] rounded-full",
-                            quantity && "text-white bg-green border-green"
-                          )}>
-                            {quantity ? <Check size={14} /> : <Plus size={14} />}
-                          </span>
-                          <span>
-                            <b className="block text-xs">{item.name}</b>
-                            <small className="block mt-[3px] text-muted text-[10px]">{item.description}</small>
-                          </span>
-                        </button>
-                        <div className="mx-0 my-[10px] mb-2 py-2 border-t border-b border-line dark:border-[#2c3a35] flex gap-0">
-                          <span className="w-1/4 flex flex-col gap-[2px]"><b className="text-[13px]">{item.calories}</b><small className="text-[#96a19c] text-[8px] uppercase tracking-[0.04em]">cal</small></span>
-                          <span className="w-1/4 flex flex-col gap-[2px]"><b className="text-[13px]">{item.protein}g</b><small className="text-[#96a19c] text-[8px] uppercase tracking-[0.04em]">protein</small></span>
-                          <span className="w-1/4 flex flex-col gap-[2px]"><b className="text-[13px]">{item.carbs}g</b><small className="text-[#96a19c] text-[8px] uppercase tracking-[0.04em]">carbs</small></span>
-                          <span className="w-1/4 flex flex-col gap-[2px]"><b className="text-[13px]">{item.fat}g</b><small className="text-[#96a19c] text-[8px] uppercase tracking-[0.04em]">fat</small></span>
-                        </div>
-                        <div className="mt-1">
-                          <ItemControls item={item} quantity={quantity} removeItem={removeItem} updateQuantity={updateQuantity} />
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
-          </aside>
-        )}
       </div>
     </div>
   );
@@ -1976,11 +2235,11 @@ function ItemControls({ item, quantity, removeItem, updateQuantity }: {
   );
 }
 
-function MealPanel({ selected, totals, portion, setPortion, removeItem, updateQuantity, saved, setSaved, saveCurrentMeal, officialBaseline, isDrawer = false }: {
+function MealPanel({ selected, totals, portion, setPortion, removeItem, updateQuantity, saved, setSaved, saveCurrentMeal, canSave, officialBaseline, isDrawer = false }: {
   selected: Selected[]; totals: Macro; portion: keyof typeof portionMultipliers;
   setPortion: (value: keyof typeof portionMultipliers) => void; removeItem: (id: string) => void;
   updateQuantity: (id: string, value: number) => void; saved: boolean; setSaved: (value: boolean) => void;
-  saveCurrentMeal: () => void; officialBaseline: boolean;
+  saveCurrentMeal: () => void; canSave: boolean; officialBaseline: boolean;
   isDrawer?: boolean;
 }) {
   return (
@@ -2098,7 +2357,7 @@ function MealPanel({ selected, totals, portion, setPortion, removeItem, updateQu
           saved ? "bg-[#e9f6ed] text-green" : "bg-green text-white"
         )}
       >
-        {saved ? <Check size={17} /> : <Bookmark size={17} />} {saved ? "Meal saved" : "Save this meal"}
+        {saved ? <Check size={17} /> : <Bookmark size={17} />} {saved ? "Meal saved" : canSave ? "Save this meal" : "Sign in to save"}
       </button>
 
       {/* Meal Note */}

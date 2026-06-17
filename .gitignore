@@ -3,7 +3,7 @@ node_modules
 .env
 .env.local
 *.log
+*.tsbuildinfo
 .claude/
 *.xls
 *.xlsx
-

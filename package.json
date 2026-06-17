@@ -8,6 +8,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@prisma/client": "^6.19.3",
     "clsx": "^2.1.1",
     "lucide-react": "^0.468.0",
     "motion": "^12.40.0",
