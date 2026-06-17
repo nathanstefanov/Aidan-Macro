@@ -191,16 +191,19 @@ function WelcomeScreen({ enterGuest, onAuthenticated }: { enterGuest: () => void
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, password }),
       });
-      const data = await response.json();
+      const contentType = response.headers.get("content-type") ?? "";
+      const data = contentType.includes("application/json")
+        ? await response.json()
+        : { error: await response.text() };
 
       if (!response.ok) {
-        setError(data?.error ?? "Something went wrong.");
+        setError(data?.error ?? "Could not reach MacroMenu auth. Try again.");
         return;
       }
 
       onAuthenticated(data.user);
     } catch {
-      setError("Could not reach the server. Try again.");
+      setError("Could not reach MacroMenu auth. Try again.");
     } finally {
       setLoading(false);
     }

@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hashSessionToken, sessionCookieName } from "@/lib/auth";
+import { authUnavailableResponse } from "@/lib/auth-response";
 import { prisma } from "@/lib/prisma";
+
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   const token = request.cookies.get(sessionCookieName)?.value;
 
-  if (token) {
-    await prisma.session.deleteMany({ where: { tokenHash: hashSessionToken(token) } });
+  try {
+    if (token) {
+      await prisma.session.deleteMany({ where: { tokenHash: hashSessionToken(token) } });
+    }
+  } catch (error) {
+    return authUnavailableResponse(error);
   }
 
   const response = NextResponse.json({ ok: true });
