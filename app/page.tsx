@@ -846,7 +846,7 @@ export default function Home() {
                           className="w-full flex items-center gap-[10px] p-2 rounded-[10px] text-left hover:bg-[#f5f8f5] dark:hover:bg-[#2a3830]"
                         >
                           <Logo id={item.restaurantId} small />
-                          <span className="flex-1"><b>{item.name}</b><small className="text-muted block">{itemRestaurant.name} · {item.calories} cal · {item.protein}g protein</small></span>
+                          <span className="flex-1"><b>{item.name}</b><small className="text-muted block">{itemRestaurant.name} · {round(item.calories)} cal · {round(item.protein)}g protein</small></span>
                           <ArrowRight size={16} />
                         </button>
                       );
@@ -2216,10 +2216,10 @@ function RestaurantBuilder({ restaurantId, meal, setMeal, selected, addItem, rem
                         </span>
                       </button>
                       <div className="m-0 grid grid-cols-4 gap-2 rounded-lg bg-[#f7f9f6] p-2 dark:bg-[#22302b] md:flex md:gap-0 md:bg-transparent md:p-0 md:dark:bg-transparent">
-                        <span className="flex w-full md:w-1/4 flex-col gap-[2px]"><b className="text-[13px]">{item.calories}</b><small className="text-[#96a19c] text-[8px] uppercase tracking-[0.04em]">cal</small></span>
-                        <span className="flex w-full md:w-1/4 flex-col gap-[2px]"><b className="text-[13px]">{item.protein}g</b><small className="text-[#96a19c] text-[8px] uppercase tracking-[0.04em]">protein</small></span>
-                        <span className="flex w-full md:w-1/4 flex-col gap-[2px]"><b className="text-[13px]">{item.carbs}g</b><small className="text-[#96a19c] text-[8px] uppercase tracking-[0.04em]">carbs</small></span>
-                        <span className="flex w-full md:w-1/4 flex-col gap-[2px]"><b className="text-[13px]">{item.fat}g</b><small className="text-[#96a19c] text-[8px] uppercase tracking-[0.04em]">fat</small></span>
+                        <span className="flex w-full md:w-1/4 flex-col gap-[2px]"><b className="text-[13px]">{round(item.calories)}</b><small className="text-[#96a19c] text-[8px] uppercase tracking-[0.04em]">cal</small></span>
+                        <span className="flex w-full md:w-1/4 flex-col gap-[2px]"><b className="text-[13px]">{round(item.protein)}g</b><small className="text-[#96a19c] text-[8px] uppercase tracking-[0.04em]">protein</small></span>
+                        <span className="flex w-full md:w-1/4 flex-col gap-[2px]"><b className="text-[13px]">{round(item.carbs)}g</b><small className="text-[#96a19c] text-[8px] uppercase tracking-[0.04em]">carbs</small></span>
+                        <span className="flex w-full md:w-1/4 flex-col gap-[2px]"><b className="text-[13px]">{round(item.fat)}g</b><small className="text-[#96a19c] text-[8px] uppercase tracking-[0.04em]">fat</small></span>
                       </div>
                       <ItemControls item={item} quantity={quantity} removeItem={removeItem} updateQuantity={updateQuantity} />
                     </article>
